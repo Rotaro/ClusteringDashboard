@@ -8,8 +8,9 @@ import requests
 logging.getLogger().setLevel(logging.INFO)
 
 
-def get_top_tv_series(start_url):
+def get_top_tv_series():
     t_start = time.time()
+    start_url = "http://www.imdb.com/chart/toptv/"
     logging.info("%s - Retrieving top 250 tv series.", start_url)
     parsed = BeautifulSoup(requests.get(start_url).text, 'html.parser')
 
