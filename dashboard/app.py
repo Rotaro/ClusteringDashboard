@@ -64,6 +64,7 @@ clusterings = misc.DropdownWithOptions(
         "KMeans": model.clustering.KMeans,
         "DBSCAN": model.clustering.DBSCAN,
         "AgglomerativeClustering": model.clustering.AgglomerativeClustering,
+        "SpectralClustering": model.clustering.SpectralClustering,
         "GaussianMixture": model.clustering.GaussianMixture,
         "LDA": model.clustering.LDA,
     }, include_refresh_button=True
@@ -281,15 +282,17 @@ def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reducti
 
         # Collect cluster information
         cluster_info.append([
-            int(cluster),
+            int(cluster), idx.sum(),
             *np.pad(df.org_title.loc[idx].sample(min(n_cluster_info, idx.sum()), replace=False).values,
                     (0, max(0, n_cluster_info - idx.sum())), 'constant'),
             *data_df.columns[data_df.loc[idx].sum(0).argsort()[::-1][:n_cluster_info]]
         ])
 
-    figure = go.Figure(data=scatters, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor='#f2f2f2'))
+    figure = go.Figure(data=scatters, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor='#f2f2f2',
+                                                       legend={'bgcolor': '#f2f2f2'}, hovermode='closest'))
     cluster_info_df = pd.DataFrame(cluster_info, columns=[
-        "Cluster", *["Sample%d" % i for i in range(1, n_cluster_info + 1)],
+        "Cluster", "Size",
+        *["Sample%d" % i for i in range(1, n_cluster_info + 1)],
         *["Top Word %d" % i for i in range(1, n_cluster_info + 1)],
     ])
 

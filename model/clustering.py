@@ -53,6 +53,17 @@ class AgglomerativeClustering(Clustering):
         return sklearn.cluster.AgglomerativeClustering(**self.options).fit_predict(arr)
 
 
+class SpectralClustering(Clustering):
+    _default_options = {'n_clusters': 8, 'affinity': 'rbf'}
+
+    def __init__(self, n_clusters, affinity):
+        self.options = {"n_clusters": int(n_clusters), 'affinity': affinity}
+
+    def apply(self, df):
+        arr = Normalizer().fit_transform(df.values)
+        return sklearn.cluster.SpectralClustering(**self.options).fit_predict(arr)
+
+
 class GaussianMixture(Clustering):
     _default_options = {'n_components': 8, 'covariance_type': 'full'}
 
