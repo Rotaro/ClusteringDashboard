@@ -1,12 +1,10 @@
 import re
-import logging
-
 import pandas as pd
 
 from nltk.stem.snowball import EnglishStemmer
 from nltk.stem.wordnet import WordNetLemmatizer
 import nltk
-from sklearn.feature_extraction.text import TfidfTransformer, TfidfVectorizer, CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 
 import dash_core_components as dcc
 
@@ -23,49 +21,6 @@ class TextAction:
     @classmethod
     def get_options(cls):
         return cls._default_options
-
-    @classmethod
-    def parse_dash_elements(cls, elements):
-        name, active, options = None, True, {}
-        for e in elements:
-            if not isinstance(e, dict):
-                continue
-            id, value = e["props"]["id"], e["props"]["value"]
-
-            if "|" not in id:
-                name = id
-                active = value
-            else:
-                options[id.split("|")[1]] = eval(value)
-                name = name or id.split("|")[0]
-
-        return name, active, options
-
-    def get_dash_element_ids(self):
-        name = self.__class__.__name__
-        return [
-            inp
-            for inp in [*([name] if self.include_checkbox else []),
-                        *['%s|%s' % (name, opt) for opt in self.get_options().keys()]]
-        ]
-
-    def to_dash_elements(self):
-        name = self.__class__.__name__
-
-        options = [
-            ("%s: " % option_name,
-             dcc.Input(id="%s|%s" % (name, option_name), type="text", value=str(default_value)))
-            for option_name, default_value in self.get_options().items()
-        ]
-
-        if self.include_checkbox:
-            checkbox = dcc.Checklist(id=name, options=[{'label': name, 'value': name}], value=[],
-                                     style={'padding': '5px', 'margin': '5px'})
-
-            logging.info([checkbox, *[e for a_b in options for e in a_b]])
-            return [checkbox, *[e for a_b in options for e in a_b]]
-
-        return [e for a_b in options for e in a_b]
 
 
 class Stem(TextAction):

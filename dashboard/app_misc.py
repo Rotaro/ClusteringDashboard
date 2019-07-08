@@ -1,19 +1,10 @@
 # -*- coding: utf-8 -*-
 import logging
 
-import dash
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-import plotly.graph_objs as go
-
-import os
-import pandas as pd
-import numpy as np
-
-from data.tv_series_data import get as get_tv_series_data
-from data import text_processing
 
 
 def flatten(obj):
@@ -26,30 +17,23 @@ def flatten(obj):
 class DropdownWithOptions:
     style = {"border": 'grey solid', 'padding': '5px', 'margin': '5px'}
 
-    def __init__(self, heading, dropdown_id, dropdown_objects, include_refresh_button):
-        self.heading = heading
+    def __init__(self, header, dropdown_id, dropdown_objects, include_refresh_button):
+        self.header = header
         self.dropdown_id = dropdown_id
         self.dropdown_objects = dropdown_objects
         self.include_refresh_button = include_refresh_button
 
-        self.dash_element = None
-        self.inputs = None
-        self.outputs = None
-
     def generate_dash_element(self):
-        if self.dash_element is None:
-            self.dash_element = html.Div([
-                html.H5(self.heading, id="%s_heading" % self.dropdown_id),
-                dcc.Dropdown(
-                    id=self.dropdown_id,
-                    options=[{'label': name, 'value': name} for name, _ in self.dropdown_objects.items()]
-                ),
-                html.P("Options:", style={'padding': '5px', 'margin': '5px'}),
-                html.Div(id='%s_options' % self.dropdown_id, style=self.style),
-                html.Div(html.Button("Refresh", id="%s_refresh" % self.dropdown_id, style=self.style))
-            ], id='%s_div' % self.dropdown_id)
-
-        return self.dash_element
+        return html.Div([
+            html.H5(self.header, id="%s_heading" % self.dropdown_id),
+            dcc.Dropdown(
+                id=self.dropdown_id,
+                options=[{'label': name, 'value': name} for name, _ in self.dropdown_objects.items()]
+            ),
+            html.P("Options:", style={'padding': '5px', 'margin': '5px'}),
+            html.Div(id='%s_options' % self.dropdown_id, style=self.style),
+            html.Div(html.Button("Refresh", id="%s_refresh" % self.dropdown_id, style=self.style))
+        ], id='%s_div' % self.dropdown_id)
 
     @property
     def _dropdown_args(self):
@@ -69,7 +53,7 @@ class DropdownWithOptions:
     def get_state(self, element='dropdown'):
         return State(*getattr(self, f"_{element}_args"))
 
-    def generate_options_callback(self, app):
+    def generate_update_options_callback(self, app):
         @app.callback(
             Output(*self._options_args),
             [self.get_input('dropdown')]
@@ -77,9 +61,9 @@ class DropdownWithOptions:
         def update_options(dropdown_choice):
             if dropdown_choice is None:
                 return
-            return self.generate_option_element(dropdown_choice)
+            return self.generate_options_element(dropdown_choice)
 
-    def generate_option_element(self, dropdown_choice):
+    def generate_options_element(self, dropdown_choice):
         return [
             e
             for option_name, default_value in self.dropdown_objects[dropdown_choice].get_options().items()
@@ -87,7 +71,7 @@ class DropdownWithOptions:
                       dcc.Input(id="%s|%s" % (dropdown_choice, option_name), type="text", value=str(default_value)))
         ]
 
-    def _parse_option_element(self, options_element):
+    def _parse_options_element(self, options_element):
         options = {}
         for e in options_element:
             if not isinstance(e, dict):
@@ -101,7 +85,7 @@ class DropdownWithOptions:
         return options
 
     def apply(self, dropdown_choice, options_element, df):
-        options = self._parse_option_element(options_element)
+        options = self._parse_options_element(options_element)
         return self.dropdown_objects[dropdown_choice](**options).apply(df)
 
 

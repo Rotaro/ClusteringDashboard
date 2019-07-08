@@ -43,21 +43,31 @@ avail_preprocess = {
     "Lemmatize": data.text_processing.Lemmatize,
 }
 
-avail_to_array = {
-    "TFIDF": data.text_processing.TFIDF,
-    "BOW": data.text_processing.BOW
-}
+to_array = misc.DropdownWithOptions(
+    header="Choose text to array method:", dropdown_id="to_array", dropdown_objects={
+        "TFIDF": data.text_processing.TFIDF,
+        "BOW": data.text_processing.BOW
+    }, include_refresh_button=True
+)
 
-avail_dim_reductions = {
-    "NMF": model.dim_reduction.NMF,
-    "PCA": model.dim_reduction.PCA,
-    "SVD": model.dim_reduction.SVD,
-    "TSNE": model.dim_reduction.TSNE,
-}
+dim_reductions = misc.DropdownWithOptions(
+    header="Choose dimensionality reduction method for plotting:", dropdown_id="dim_reduction", dropdown_objects={
+        "NMF": model.dim_reduction.NMF,
+        "PCA": model.dim_reduction.PCA,
+        "SVD": model.dim_reduction.SVD,
+        "TSNE": model.dim_reduction.TSNE,
+    }, include_refresh_button=True
+)
 
-to_array = misc.DropdownWithOptions("Choose text to array method:", "to_array", avail_to_array, True)
-dim_reductions = misc.DropdownWithOptions("Choose dimensionality reduction method for plotting:",
-                                          "dim_reduction", avail_dim_reductions, True)
+clusterings = misc.DropdownWithOptions(
+    header="Choose clustering algorithm:", dropdown_id="clustering", dropdown_objects={
+        "KMeans": model.clustering.KMeans,
+        "DBSCAN": model.clustering.DBSCAN,
+        "AgglomerativeClustering": model.clustering.AgglomerativeClustering,
+        "GaussianMixture": model.clustering.GaussianMixture,
+        "LDA": model.clustering.LDA,
+    }, include_refresh_button=True
+)
 
 
 @cache.memoize()
@@ -83,10 +93,10 @@ def get_preprocessed(data_name, chosen_cols, chosen_preprocess):
     df = get_chosen_cols(data_name, chosen_cols)
     if df is not None and chosen_preprocess:
         for preprocess_div in chosen_preprocess:
-            name, active, options = data.text_processing.TextAction.parse_dash_elements(preprocess_div["props"]["children"])
+            name, active = preprocess_div["props"]["id"], preprocess_div["props"]["value"]
             if not active:
                 continue
-            df = avail_preprocess[name](**options).apply(df)
+            df = avail_preprocess[name]().apply(df)
 
         return df
 
@@ -125,9 +135,10 @@ app.layout = html.Div([
                     # Choose preprocessing
                     html.Div([
                         html.H5('Text preprocessing:'),
-                        html.Div(
-                            [html.Div(cls().to_dash_elements()) for name, cls in avail_preprocess.items()],
-                            id='preprocess_picker')
+                        html.Div([dcc.Checklist(id=name, options=[{'label': name, 'value': name}], value=[],
+                                                style={'padding': '5px', 'margin': '5px'})
+                                  for name, cls in avail_preprocess.items()],
+                                 id='preprocess_picker')
                     ], id='preprocess_picker_div'),
                     # Display preprocessed text
                     html.H5('Text used for clustering:'),
@@ -155,20 +166,27 @@ app.layout = html.Div([
                 ]),
             ], className='custom-tab', selected_className='custom-tab--selected'),
             dcc.Tab(label='Clustering', children=[
-                html.Div(id="clustering_area", children=[]),
+                html.Div(id="clustering_area", children=[
+                    dcc.Checklist(id='cluster_on_dim_reduction',
+                                  options=[{'label': 'Cluster on dimensional reduction',
+                                            'value': 'true'}], value=[],
+                                  style={'padding': '5px', 'margin': '5px'}),
+                    clusterings.generate_dash_element(),
+                ]),
             ], className='custom-tab', selected_className='custom-tab--selected'),
             dcc.Tab(label='Hide', children=[], className='custom-tab', selected_className='custom-tab--selected'),
         ]),
     ], style={'marginTop': '10px', 'padding': '5px', 'border': 'grey solid'}),
 
     html.Div(id="plot_area", children=[
-        dcc.Graph(id="plot-3d")
-    ], style={"border": 'grey solid', 'padding': '5px', 'marginTop': '20px'})
+        dcc.Graph(id="scatter-plot")
+    ], style={'border': 'grey solid', 'padding': '5px', 'marginTop': '10px'})
 ], style={'background-color': '#f2f2f2', 'margin': '20px'})
 
 
-to_array.generate_options_callback(app)
-dim_reductions.generate_options_callback(app)
+to_array.generate_update_options_callback(app)
+dim_reductions.generate_update_options_callback(app)
+clusterings.generate_update_options_callback(app)
 
 
 @app.callback(
@@ -187,7 +205,7 @@ def update_data_area(input_value):
     [Input('col_picker', 'value'),
      Input('preprocess_picker', 'children'),
      to_array.get_input('options'),
-     *misc.generate_text_processing_inputs([avail_preprocess]),
+     *[Input(name, 'value') for name in avail_preprocess.keys()],
      Input('to_array_refresh', 'n_clicks')],
     [State('data', 'value'), to_array.get_state('dropdown')]
 )
@@ -204,43 +222,56 @@ def update_text_to_cluster_area(chosen_cols, chosen_preprocess, to_array_options
 
 
 @app.callback(
-    Output('plot-3d', 'figure'),
+    Output('scatter-plot', 'figure'),
     [Input('cluster_array_header', 'children'),
      dim_reductions.get_input('dropdown'),
      dim_reductions.get_input('options'),
-     dim_reductions.get_input('refresh')],
+     dim_reductions.get_input('refresh'),
+     clusterings.get_input('dropdown'),
+     clusterings.get_input('options'),
+     clusterings.get_input('refresh'),
+     Input('cluster_on_dim_reduction', 'value')],
     [State('data', 'value'),
      State('col_picker', 'value'),
      State('preprocess_picker', 'children'),
      to_array.get_state('dropdown'),
      to_array.get_state('options')]
 )
-def plot(cluster_array, dim_reduction, dim_reduction_options, dim_reduction_refresh,
+def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reduction_refresh,
+         clustering, clustering_options, clustering_refresh, cluster_on_dim_reduction,
          data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options):
     df = get_data_source(data_name)
     data_df = get_cluster_data(data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options)
     if df is None or data_df is None or not dim_reduction_options:
-        return go.Figure()
+        return go.Figure(layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor='#f2f2f2'))
 
     arr = dim_reductions.apply(dim_reduction, dim_reduction_options, data_df)
     dims = list(zip(("x", "y", "z"), range(arr.shape[1])))
     scatter_class = go.Scatter3d if len(dims) == 3 else go.Scatter
 
-    from sklearn.cluster import KMeans
-    clusters = KMeans(n_clusters=8).fit_predict(data_df.values)
+    if clustering_options:
+        clusters = clusterings.apply(clustering, clustering_options,
+                                     pd.DataFrame(arr) if cluster_on_dim_reduction else data_df)
+    else:
+        clusters = np.zeros(arr.shape[0])
 
-    data = []
-    for cluster in np.unique(clusters):
+    # Generate unique colors (https://stackoverflow.com/a/55828367)
+    import matplotlib
+    np.random.seed(42)
+    colors = np.random.choice(list(matplotlib.colors.cnames.values()), size=np.unique(clusters).size, replace=False)
+    scatters = []
+    for i, cluster in enumerate(np.unique(clusters)):
         idx = clusters == cluster
-        data.append(scatter_class(
+        scatters.append(scatter_class(
             name="Cluster %d" % cluster,
             **{label: arr[idx, i] for label, i in dims},
             text=df.org_title.values[idx],
             textposition="top center",
             mode="markers",
-            marker=dict(size=5, symbol="circle"),
+            marker=dict(size=5 if arr.shape[1] == 3 else 12, symbol="circle", color=colors[i]),
         ))
-    figure = go.Figure(data=data, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0)))
+    figure = go.Figure(data=scatters, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0),
+                                                       plot_bgcolor='#f2f2f2'))
 
     return figure
 
