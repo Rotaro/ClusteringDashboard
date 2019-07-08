@@ -179,8 +179,11 @@ app.layout = html.Div([
     ], style={'marginTop': '10px', 'padding': '5px', 'border': 'grey solid'}),
 
     html.Div(id="plot_area", children=[
-        dcc.Graph(id="scatter-plot")
-    ], style={'border': 'grey solid', 'padding': '5px', 'marginTop': '10px'})
+        dcc.Tabs(id="tabs_3", children=[
+            dcc.Tab(label='Plot', children=[dcc.Graph(id="scatter-plot")]),
+            dcc.Tab(label='Clusters', children=[html.Div(id='cluster_info_table')])
+        ], style={'border': 'grey solid', 'padding': '5px', 'marginTop': '10px'})
+    ], style={'marginTop': '10px', 'padding': '5px', 'border': 'grey solid'})
 ], style={'background-color': '#f2f2f2', 'margin': '20px'})
 
 
@@ -216,13 +219,13 @@ def update_text_to_cluster_area(chosen_cols, chosen_preprocess, to_array_options
     cluster_array_header = "Matrix to cluster (shape %dx%d):" % ((0, 0) if data_df is None else data_df.shape)
 
     return misc.generate_datatable(df, 'text_to_cluster', 5, max_cell_width="1000px"), \
-           misc.generate_datatable(data_df.sample(20, axis=1).round(2) if data_df is not None else None,
+           misc.generate_datatable(data_df.sample(min(data_df.shape[1], 20), axis=1).round(2) if data_df is not None else None,
                                    'data_to_cluster', 5, max_cell_width="350px"), \
            cluster_array_header
 
 
 @app.callback(
-    Output('scatter-plot', 'figure'),
+    [Output('scatter-plot', 'figure'), Output('cluster_info_table', 'children')],
     [Input('cluster_array_header', 'children'),
      dim_reductions.get_input('dropdown'),
      dim_reductions.get_input('options'),
@@ -243,7 +246,7 @@ def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reducti
     df = get_data_source(data_name)
     data_df = get_cluster_data(data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options)
     if df is None or data_df is None or not dim_reduction_options:
-        return go.Figure(layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor='#f2f2f2'))
+        return go.Figure(layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor='#f2f2f2')), None
 
     arr = dim_reductions.apply(dim_reduction, dim_reduction_options, data_df)
     dims = list(zip(("x", "y", "z"), range(arr.shape[1])))
@@ -260,8 +263,13 @@ def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reducti
     np.random.seed(42)
     colors = np.random.choice(list(matplotlib.colors.cnames.values()), size=np.unique(clusters).size, replace=False)
     scatters = []
+    cluster_info = []
+    n_cluster_info = 10
     for i, cluster in enumerate(np.unique(clusters)):
         idx = clusters == cluster
+        if idx.sum() == 0:
+            continue
+
         scatters.append(scatter_class(
             name="Cluster %d" % cluster,
             **{label: arr[idx, i] for label, i in dims},
@@ -270,10 +278,22 @@ def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reducti
             mode="markers",
             marker=dict(size=5 if arr.shape[1] == 3 else 12, symbol="circle", color=colors[i]),
         ))
-    figure = go.Figure(data=scatters, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0),
-                                                       plot_bgcolor='#f2f2f2'))
 
-    return figure
+        # Collect cluster information
+        cluster_info.append([
+            int(cluster),
+            *np.pad(df.org_title.loc[idx].sample(min(n_cluster_info, idx.sum()), replace=False).values,
+                    (0, max(0, n_cluster_info - idx.sum())), 'constant'),
+            *data_df.columns[data_df.loc[idx].sum(0).argsort()[::-1][:n_cluster_info]]
+        ])
+
+    figure = go.Figure(data=scatters, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor='#f2f2f2'))
+    cluster_info_df = pd.DataFrame(cluster_info, columns=[
+        "Cluster", *["Sample%d" % i for i in range(1, n_cluster_info + 1)],
+        *["Top Word %d" % i for i in range(1, n_cluster_info + 1)],
+    ])
+
+    return figure, misc.generate_datatable(cluster_info_df, 'cluster_info', 1000, '600px')
 
 
 if __name__ == '__main__':
