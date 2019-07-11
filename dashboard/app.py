@@ -8,16 +8,13 @@ import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 
-import os
 import pandas as pd
 import numpy as np
-import matplotlib
 
-import dashboard.app_misc as misc
-from data.tv_series_data import get as get_tv_series_data
-import data.text_processing
-import model.dim_reduction
-import model.clustering
+import ClusteringDashboard.data.text_processing as text_processing
+import ClusteringDashboard.model as model
+import ClusteringDashboard.dashboard.app_misc as misc
+from ClusteringDashboard.data.tv_series_data import get as get_tv_series_data
 from flask_caching import Cache
 
 
@@ -36,25 +33,25 @@ cache = Cache()
 cache.init_app(app.server, config=CACHE_CONFIG)
 
 data_sources = {
-    "TV Series Data": lambda: get_tv_series_data("../data/tv_series_data.csv")
+    "TV Series Data": lambda: get_tv_series_data("tv_series_data.csv")
 }
 
 avail_preprocess = {
-    "WikipediaTextCleanup": data.text_processing.WikipediaTextCleanup,
-    "Stem": data.text_processing.Stem,
-    "Lemmatize": data.text_processing.Lemmatize,
+    "WikipediaTextCleanup": text_processing.WikipediaTextCleanup,
+    "Stem": text_processing.Stem,
+    "Lemmatize": text_processing.Lemmatize,
 }
 
 to_array = misc.DropdownWithOptions(
     header="Choose text to array method:", dropdown_id="to_array", dropdown_objects={
-        "TFIDF": data.text_processing.TFIDF,
-        "BOW": data.text_processing.BOW,
+        "TFIDF": text_processing.TFIDF,
+        "BOW": text_processing.BOW,
     }, include_refresh_button=True
 )
-if data.text_processing.fasttext is not None:
-    to_array.dropdown_objects["FastText"] = data.text_processing.FastText
-if data.text_processing.fasttext is not None and data.text_processing.FastTextPretrained.has_pretrained():
-    to_array.dropdown_objects["FastTextPretrained"] = data.text_processing.FastTextPretrained
+if text_processing.fasttext is not None:
+    to_array.dropdown_objects["FastText"] = text_processing.FastText
+if text_processing.fasttext is not None and text_processing.FastTextPretrained.has_pretrained():
+    to_array.dropdown_objects["FastTextPretrained"] = text_processing.FastTextPretrained
 
 dim_reductions = misc.DropdownWithOptions(
     header="Choose dimensionality reduction method for plotting:", dropdown_id="dim_reduction", dropdown_objects={
@@ -86,7 +83,7 @@ def get_data_source(data_name):
 def get_chosen_cols(data_name, chosen_cols):
     df = get_data_source(data_name)
     if df is not None and chosen_cols is not None and len(chosen_cols) > 0:
-        return data.text_processing.join_columns(df, chosen_cols)
+        return text_processing.join_columns(df, chosen_cols)
 
 
 @cache.memoize()
@@ -212,7 +209,7 @@ app.layout = html.Div([
                     className="custom-tab", selected_className="custom-tab--selected"),
             dcc.Tab(label="Recommendation", children=[
                 html.Div(id="recommendation_area", children=[
-                    html.P("Metric:", style={"padding": "5px"}),
+                    html.P("Pairwise Distance:", style={"padding": "5px"}),
                     dcc.Dropdown(id="recommendation_metric", options=[
                         {"label": name, "value": name} for name in ("cosine", "euclidean", "manhattan")
                     ], value="cosine"),
@@ -299,7 +296,7 @@ def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reducti
                                                             legend={"bgcolor": "#f2f2f2"}, hovermode="closest"))
 
     # Cluster information
-    bow_data_df = data.text_processing.TFIDF(ngram_range=(1, 1)).apply(
+    bow_data_df = text_processing.TFIDF(ngram_range=(1, 1)).apply(
         get_preprocessed(data_name, chosen_cols, chosen_preprocess)
     )
     cluster_info_df = misc.get_cluster_info_df(10, clusters, titles, bow_data_df)

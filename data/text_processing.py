@@ -15,8 +15,8 @@ try:
 except ImportError as e:
     fasttext = None
 
-import dash_core_components as dcc
 
+_path = os.path.dirname(__file__)
 nltk.download('wordnet')
 
 
@@ -143,13 +143,13 @@ class FastTextPretrained(TextAction):
 
     @classmethod
     def has_pretrained(cls):
-        return "fasttext_pretrained.pickle" in os.listdir("../data/")
+        return "fasttext_pretrained.pickle" in os.listdir(_path)
 
     @classmethod
     def _get_pretrained(cls):
         import pickle
 
-        with open("../data/fasttext_pretrained.pickle", "rb") as f:
+        with open("_path" + "\\" + "fasttext_pretrained.pickle", "rb") as f:
             return pickle.loads(f.read())
 
     def apply(self, df):

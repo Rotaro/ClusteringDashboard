@@ -3,11 +3,12 @@ import time
 import os
 import pickle
 
+import ClusteringDashboard.data.wikipedia as wikipedia
+import ClusteringDashboard.data.imdb as imdb
+
 import pandas as pd
 
-import data.wikipedia as wikipedia
-import data.imdb as imdb
-
+_path = os.path.dirname(__file__)
 _local_cache = {}
 _columns = ["id", "title", "org_title", "year", "imdb_tags", "summary", "wikipedia_summary"]
 
@@ -16,7 +17,7 @@ def _get_set_local_cache(key, value_func, set_value=True, pickle_value=True):
     pickle_key = key.replace("\\", ".").replace("/", ".") + ".pickle"
 
     if pickle_value and pickle_key in os.listdir():
-        with open(pickle_key, "rb") as f:
+        with open(_path + "\\" + pickle_key, "rb") as f:
             value = pickle.load(f)
 
         if set_value and key not in _local_cache:
@@ -27,7 +28,7 @@ def _get_set_local_cache(key, value_func, set_value=True, pickle_value=True):
         if set_value:
             _local_cache[key] = value
         if pickle_value:
-            with open(pickle_key, "wb") as f:
+            with open(_path + "\\" + pickle_key, "wb") as f:
                 pickle.dump(value, f)
 
     return _local_cache[key]
@@ -61,13 +62,13 @@ def _get_tv_series_data(tv_series):
 
 def _load_tv_series_csv(filename):
     try:
-        return pd.read_csv(filename, sep="\t", encoding="utf-8")
+        return pd.read_csv(_path + "\\" + filename, sep="\t", encoding="utf-8")
     except FileNotFoundError:
         return pd.DataFrame(columns=_columns)
 
 
 def _save_tv_series_csv(df, filename):
-    df.to_csv(filename, sep="\t", encoding="utf-8", index=False)
+    df.to_csv(_path + "\\" + filename, sep="\t", encoding="utf-8", index=False)
 
 
 def get(filename=None):
