@@ -39,6 +39,7 @@ data_sources = {
 }
 
 avail_preprocess = {
+    "WikipediaTextCleanup": data.text_processing.WikipediaTextCleanup,
     "Stem": data.text_processing.Stem,
     "Lemmatize": data.text_processing.Lemmatize,
 }
@@ -46,9 +47,13 @@ avail_preprocess = {
 to_array = misc.DropdownWithOptions(
     header="Choose text to array method:", dropdown_id="to_array", dropdown_objects={
         "TFIDF": data.text_processing.TFIDF,
-        "BOW": data.text_processing.BOW
+        "BOW": data.text_processing.BOW,
     }, include_refresh_button=True
 )
+if data.text_processing.fasttext is not None:
+    to_array.dropdown_objects["FastText"] = data.text_processing.FastText
+if data.text_processing.fasttext is not None and data.text_processing.FastTextPretrained.has_pretrained():
+    to_array.dropdown_objects["FastTextPretrained"] = data.text_processing.FastTextPretrained
 
 dim_reductions = misc.DropdownWithOptions(
     header="Choose dimensionality reduction method for plotting:", dropdown_id="dim_reduction", dropdown_objects={
@@ -80,13 +85,7 @@ def get_data_source(data_name):
 def get_chosen_cols(data_name, chosen_cols):
     df = get_data_source(data_name)
     if df is not None and chosen_cols is not None and len(chosen_cols) > 0:
-        series = df[chosen_cols[0]].astype(str)
-        for col in chosen_cols[1:]:
-            series = series + ". " + df[col].astype(str)
-
-        df = pd.DataFrame(series.values, columns=["text_to_cluster"])
-
-        return df
+        return data.text_processing.join_columns(df, chosen_cols)
 
 
 @cache.memoize()
@@ -249,6 +248,9 @@ def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reducti
     if df is None or data_df is None or not dim_reduction_options:
         return go.Figure(layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor='#f2f2f2')), None
 
+    bow_data_df = data.text_processing.BOW(ngram_range=(1, 1)).apply(
+        get_preprocessed(data_name, chosen_cols, chosen_preprocess)
+    )
     arr = dim_reductions.apply(dim_reduction, dim_reduction_options, data_df)
     dims = list(zip(("x", "y", "z"), range(arr.shape[1])))
     scatter_class = go.Scatter3d if len(dims) == 3 else go.Scatter
@@ -285,7 +287,7 @@ def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reducti
             int(cluster), idx.sum(),
             *np.pad(df.org_title.loc[idx].sample(min(n_cluster_info, idx.sum()), replace=False).values,
                     (0, max(0, n_cluster_info - idx.sum())), 'constant'),
-            *data_df.columns[data_df.loc[idx].sum(0).argsort()[::-1][:n_cluster_info]]
+            *bow_data_df.columns[bow_data_df.loc[idx].sum(0).argsort()[::-1][:n_cluster_info]]
         ])
 
     figure = go.Figure(data=scatters, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor='#f2f2f2',
