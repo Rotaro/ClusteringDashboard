@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
 import logging
 
+import numpy as np
+import matplotlib
+import pandas as pd
+from sklearn.metrics.pairwise import pairwise_distances
+
 import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import plotly.graph_objs as go
 
 
 def flatten(obj):
@@ -133,3 +139,73 @@ def generate_text_processing_inputs(text_processing_dicts):
         for name in cls().get_dash_element_ids()
     ]
     return L
+
+
+def get_scatter_plots(coords, clusters, titles):
+    # Generate unique colors (https://stackoverflow.com/a/55828367)
+    np.random.seed(42)
+    colors = np.random.choice(list(matplotlib.colors.cnames.values()), size=np.unique(clusters).size, replace=False)
+
+    dims = list(zip(("x", "y", "z"), range(coords.shape[1])))
+    scatter_class = go.Scatter3d if len(dims) == 3 else go.Scatter
+    scatter_plots = []
+    for i, cluster in enumerate(np.unique(clusters)):
+        idx = clusters == cluster
+        if idx.sum() == 0:
+            continue
+
+        scatter_plots.append(scatter_class(
+            name="Cluster %d" % cluster,
+            **{label: coords[idx, i] for label, i in dims},
+            text=titles.values[idx],
+            textposition="top center",
+            mode="markers",
+            marker=dict(size=5 if len(dims) == 3 else 12, symbol="circle", color=colors[i]),
+        ))
+
+    return scatter_plots
+
+
+def get_cluster_info_df(n_cluster_info, clusters, titles, bow_data_df):
+    cluster_info = []
+
+    for i, cluster in enumerate(np.unique(clusters)):
+        idx = clusters == cluster
+        if idx.sum() == 0:
+            continue
+        # Collect cluster information
+        cluster_info.append([
+            int(cluster), idx.sum(),
+            *np.pad(titles.loc[idx].sample(min(n_cluster_info, idx.sum()), replace=False).values,
+                    (0, max(0, n_cluster_info - idx.sum())), 'constant'),
+            *bow_data_df.columns[bow_data_df.loc[idx].sum(0).argsort()[::-1][:n_cluster_info]]
+        ])
+
+    cluster_info_df = pd.DataFrame(cluster_info, columns=[
+        "Cluster", "Size",
+        *["Sample%d" % i for i in range(1, n_cluster_info + 1)],
+        *["Top Word %d" % i for i in range(1, n_cluster_info + 1)],
+    ])
+
+    return cluster_info_df
+
+
+def get_recommendations(n, recommend_for, recommendation_metric, data_df, clusters, titles):
+    recommend_for_idx = np.argwhere(titles.values == recommend_for).ravel()[0]
+    recommend_for_cluster = clusters[recommend_for_idx]
+    dists = pairwise_distances(data_df.values[recommend_for_idx, :][None, :], data_df.values,
+                               metric=recommendation_metric)
+    dists_in_cluster = pairwise_distances(data_df.values[recommend_for_idx, :][None, :],
+                                          data_df.values[clusters == recommend_for_cluster],
+                                          metric=recommendation_metric)
+
+    top = np.argsort(dists).ravel()[:n]
+    top_cluster = np.argsort(dists_in_cluster).ravel()[:n]
+
+    return pd.DataFrame(
+        {"Top Recommendations": titles.values[top],
+         "Top Recommendations in Cluster":
+             np.pad(titles.values[clusters == recommend_for_cluster][top_cluster],
+                    (0, max(n - len(top_cluster), 0)), 'constant')
+         }
+    )

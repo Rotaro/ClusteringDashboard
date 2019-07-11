@@ -36,9 +36,7 @@ class DBSCAN(Clustering):
         self.options = {"eps": float(eps), 'min_samples': int(min_samples)}
 
     def apply(self, df):
-        # arr = Normalizer().fit_transform(df.values)
         clusters = sklearn.cluster.DBSCAN(**self.options).fit_predict(df.values)
-        print(clusters)
         return clusters
 
 
