@@ -55,9 +55,21 @@ if text_processing.fasttext is not None and text_processing.FastTextPretrained.h
 
 dim_reductions = misc.DropdownWithOptions(
     header="Choose dimensionality reduction method for plotting:", dropdown_id="dim_reduction", dropdown_objects={
+        "None": None,
         "NMF": model.dim_reduction.NMF,
         "PCA": model.dim_reduction.PCA,
         "SVD": model.dim_reduction.SVD,
+        "FactorAnalysis": model.dim_reduction.FactorAnalysis,
+        "TSNE": model.dim_reduction.TSNE,
+    }, include_refresh_button=True
+)
+
+plot_dim_reductions = misc.DropdownWithOptions(
+    header="Choose dimensionality reduction method for plotting:", dropdown_id="plot_dim_reduction", dropdown_objects={
+        "NMF": model.dim_reduction.NMF,
+        "PCA": model.dim_reduction.PCA,
+        "SVD": model.dim_reduction.SVD,
+        "FactorAnalysis": model.dim_reduction.FactorAnalysis,
         "TSNE": model.dim_reduction.TSNE,
     }, include_refresh_button=True
 )
@@ -113,25 +125,28 @@ def get_cluster_data(data_name, chosen_cols, chosen_preprocess, chosen_to_array,
 def get_dim_reduction(data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options,
                       dim_reduction, dim_reduction_options):
     df, data_df = get_cluster_data(data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options)
-    return df, data_df, dim_reductions.apply(dim_reduction, dim_reduction_options, data_df)
+    if df is None or data_df is None or not dim_reduction_options:
+        return df, data_df, None
+
+    return df, data_df, pd.DataFrame(dim_reductions.apply(dim_reduction, dim_reduction_options, data_df))
 
 
 @cache.memoize()
 def get_clusters(data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options,
                  dim_reduction, dim_reduction_options,
-                 clustering, clustering_options, cluster_on_dim_reduction):
-    df, data_df, coords = get_dim_reduction(
+                 clustering, clustering_options):
+    df, data_df, dim_red_df = get_dim_reduction(
         data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options,
         dim_reduction, dim_reduction_options
     )
+    to_cluster = dim_red_df if dim_red_df is not None else data_df
 
     if clustering_options:
-        clusters = clusterings.apply(clustering, clustering_options,
-                                     pd.DataFrame(coords) if cluster_on_dim_reduction else data_df)
+        clusters = clusterings.apply(clustering, clustering_options, to_cluster)
     else:
-        clusters = np.zeros(coords.shape[0])
+        clusters = np.zeros(to_cluster.shape[0])
 
-    return df, data_df, coords, clusters
+    return df, data_df, dim_red_df, clusters
 
 
 app.layout = html.Div([
@@ -147,25 +162,25 @@ app.layout = html.Div([
                     ),
                     # Choose columns
                     html.H5("Choose columns to use:"),
-                    html.Div(dcc.Dropdown(id="col_picker"), id="col_picker_div"),
+                    html.Div(dcc.Dropdown(id="data_col_picker"), id="data_col_picker_div"),
                     # Display top rows
                     html.H5("Top rows:"),
                     html.Div(dash_table.DataTable(id="data_head_table"), id="data_head_div")
                 ]),
             ], className="custom-tab", selected_className="custom-tab--selected"),
             dcc.Tab(label="Text Preprocessing", children=[
-                html.Div(id="text_preprocessing_area", children=[
+                html.Div(id="text_preprocess_area", children=[
                     # Choose preprocessing
                     html.Div([
                         html.H5("Text preprocessing:"),
                         html.Div([dcc.Checklist(id=name, options=[{"label": name, "value": name}], value=[],
                                                 style={"padding": "5px", "margin": "5px"})
                                   for name, cls in avail_preprocess.items()],
-                                 id="preprocess_picker")
-                    ], id="preprocess_picker_div"),
+                                 id="text_preprocess_picker")
+                    ], id="text_preprocess_picker_div"),
                     # Display preprocessed text
                     html.H5("Text used for clustering:"),
-                    html.Div(dash_table.DataTable(id="text_to_cluster"), id="text_to_cluster_div"),
+                    html.Div(dash_table.DataTable(id="text_preprocess"), id="text_preprocess_div"),
                 ]),
             ], className="custom-tab", selected_className="custom-tab--selected"),
             dcc.Tab(label="Text to Array", children=[
@@ -173,8 +188,17 @@ app.layout = html.Div([
                     # Choose text_to_array method
                     to_array.generate_dash_element(),
                     # Display array
-                    html.H5("Cluster array:", id="cluster_array_header"),
-                    html.Div(dash_table.DataTable(id="data_array"), id="data_to_cluster_div"),
+                    html.H5("Cluster array:", id="text_to_array_header"),
+                    html.Div(dash_table.DataTable(id="text_to_array"), id="text_to_array_div"),
+                ]),
+            ], className="custom-tab", selected_className="custom-tab--selected"),
+            dcc.Tab(label="Dimensionality Reduction", children=[
+                html.Div(id="dim_red_area", children=[
+                    # Choose text_to_array method
+                    dim_reductions.generate_dash_element(),
+                    # Display array
+                    html.H5("Dimensionality Reduced Array:", id="dim_red_array_header"),
+                    html.Div(dash_table.DataTable(id="dim_red_array"), id="dim_red_array_div"),
                 ]),
             ], className="custom-tab", selected_className="custom-tab--selected"),
             dcc.Tab(label="Hide", children=[], className="custom-tab", selected_className="custom-tab--selected"),
@@ -183,17 +207,13 @@ app.layout = html.Div([
 
     html.Div([
         dcc.Tabs(id="tabs_2", children=[
-            dcc.Tab(label="Plotting / Dimensionality Reduction", children=[
-                html.Div(id="dim_red_area", children=[
-                    dim_reductions.generate_dash_element(),
+            dcc.Tab(label="Plotting Options", children=[
+                html.Div(id="plotting_dim_red_area", children=[
+                    plot_dim_reductions.generate_dash_element(),
                 ]),
             ], className="custom-tab", selected_className="custom-tab--selected"),
             dcc.Tab(label="Clustering", children=[
                 html.Div(id="clustering_area", children=[
-                    dcc.Checklist(id="cluster_on_dim_reduction",
-                                  options=[{"label": "Cluster on dimensional reduction",
-                                            "value": "true"}], value=[],
-                                  style={"padding": "5px", "margin": "5px"}),
                     clusterings.generate_dash_element(),
                 ]),
             ], className="custom-tab", selected_className="custom-tab--selected"),
@@ -226,115 +246,166 @@ app.layout = html.Div([
 
 to_array.generate_update_options_callback(app)
 dim_reductions.generate_update_options_callback(app)
+plot_dim_reductions.generate_update_options_callback(app)
 clusterings.generate_update_options_callback(app)
 
 
 @app.callback(
-    [Output("data_head_div", "children"), Output("col_picker_div", "children")],
+    [Output("data_head_div", "children"), Output("data_col_picker_div", "children"),
+     Output("recommendation_picker", "options")],
     [Input("data", "value")]
 )
-def update_data_area(input_value):
+def update_chosen_data(input_value):
     df = get_data_source(input_value)
+
+    if df is not None:
+        recommendation_options = [{"label": org_title, "value": org_title} for org_title in sorted(df.org_title.values)]
+    else:
+        recommendation_options = None
+
     return misc.generate_datatable(df, "data_head_table", 5),\
-           misc.generate_column_picker(df, "col_picker")
+           misc.generate_column_picker(df, "data_col_picker"), \
+           recommendation_options
 
 
 @app.callback(
-    [Output("text_to_cluster_div", "children"), Output("data_to_cluster_div", "children"),
-     Output("cluster_array_header", "children")],
-    [Input("col_picker", "value"),
-     Input("preprocess_picker", "children"),
-     to_array.get_input("options"),
-     *[Input(name, "value") for name in avail_preprocess.keys()],
-     Input("to_array_refresh", "n_clicks")],
-    [State("data", "value"), to_array.get_state("dropdown")]
+    Output("text_preprocess_div", "children"),
+    [Input("data_col_picker", "value"),
+     Input("text_preprocess_picker", "children"),
+     # Additional triggers, but don't need input
+     *[Input(name, "value") for name in avail_preprocess.keys()]],
+    [State("data", "value")]
 )
-def update_text_to_cluster_area(chosen_cols, chosen_preprocess, to_array_options, *args):
-    data_name, chosen_to_array = args[-2:]
-    df, data_df = get_cluster_data(data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options)
-    cluster_array_header = "Matrix to cluster (shape %dx%d):" % ((0, 0) if data_df is None else data_df.shape)
+def update_text_preprocess_area(chosen_cols, chosen_preprocess, *args):
+    data_name = args[-1]
+    df = get_preprocessed(data_name, chosen_cols, chosen_preprocess)
 
-    return misc.generate_datatable(df, "text_to_cluster", 5, max_cell_width="2000px"), \
-           misc.generate_datatable(data_df.sample(min(data_df.shape[1], 20), axis=1).round(2) if data_df is not None else None,
-                                   "data_to_cluster", 5, max_cell_width="350px"), \
-           cluster_array_header
+    return misc.generate_datatable(df, "text_preprocess", 5, max_cell_width=None)
 
 
 @app.callback(
-    [Output("scatter-plot", "figure"), Output("cluster_info_table", "children"),
-     Output("recommendation_picker", "options")],
-    [Input("cluster_array_header", "children"),
+    [Output("text_to_array_div", "children"), Output("text_to_array_header", "children")],
+    [to_array.get_input("dropdown"), to_array.get_input("options"),
+     # Additional triggers, but don't need input
+     to_array.get_input("refresh"),
+     Input("text_preprocess_div", "children")],
+    [State("data", "value"), State("data_col_picker", "value"), State("text_preprocess_picker", "children")]
+)
+def update_text_to_array_area(chosen_to_array, to_array_options, *args):
+    data_name, chosen_cols, chosen_preprocess = args[-3:]
+    df, data_df = get_cluster_data(data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options)
+    text_to_array_header = "Array to cluster (shape %dx%d):" % ((0, 0) if data_df is None else data_df.shape)
+    sample_df = data_df.sample(min(data_df.shape[1], 20), axis=1).round(2) if data_df is not None else None
+
+    return misc.generate_datatable(sample_df, "text_to_array", 5, max_cell_width=None), \
+           text_to_array_header
+
+
+@app.callback(
+    Output("dim_red_array_div", "children"),
+    [dim_reductions.get_input("dropdown"), dim_reductions.get_input("options"),
+     # Additional triggers, but don't need inputs
+     dim_reductions.get_input("refresh"),
+     Input("text_to_array_div", "children")],
+    [State("data", "value"), State("data_col_picker", "value"), State("text_preprocess_picker", "children"),
+     to_array.get_state("dropdown"), to_array.get_state("options")]
+)
+def update_dim_red_area(chosen_dim_reduction, dim_reduction_options, *args):
+    data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options = args[-5:]
+    df, data_df, dim_red_df = get_dim_reduction(data_name, chosen_cols, chosen_preprocess, chosen_to_array,
+                                                to_array_options, chosen_dim_reduction, dim_reduction_options)
+
+    sample_df = dim_red_df.sample(min(dim_red_df.shape[1], 20), axis=1).round(2) if dim_red_df is not None else None
+
+    return misc.generate_datatable(sample_df, "dim_red_array", 5, max_cell_width="350px")
+
+
+@app.callback(
+    [Output("scatter-plot", "figure"), Output("cluster_info_table", "children")],
+    [to_array.get_input("dropdown"),
+     to_array.get_input("options"),
      dim_reductions.get_input("dropdown"),
      dim_reductions.get_input("options"),
-     dim_reductions.get_input("refresh"),
+     plot_dim_reductions.get_input("dropdown"),
+     plot_dim_reductions.get_input("options"),
      clusterings.get_input("dropdown"),
      clusterings.get_input("options"),
-     clusterings.get_input("refresh"),
-     Input("cluster_on_dim_reduction", "value")],
+     # Additional triggers, but don't need data
+     dim_reductions.get_input("refresh"),
+     plot_dim_reductions.get_input("refresh"),
+     clusterings.get_input("refresh")],
     [State("data", "value"),
-     State("col_picker", "value"),
-     State("preprocess_picker", "children"),
-     to_array.get_state("dropdown"),
-     to_array.get_state("options")]
+     State("data_col_picker", "value"),
+     State("text_preprocess_picker", "children")]
 )
-def plot(cluster_array_header, dim_reduction, dim_reduction_options, dim_reduction_refresh,
-         clustering, clustering_options, clustering_refresh, cluster_on_dim_reduction,
-         data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options):
-    if data_name is None or not chosen_cols or not dim_reduction_options:
-        return go.Figure(layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor="#f2f2f2")), None, None
+def plot(chosen_to_array, to_array_options,
+         dim_reduction, dim_reduction_options,
+         plot_dim_reduction, plot_dim_reduction_options,
+         clustering, clustering_options,
+         _, _1, _2,
+         data_name, chosen_cols, chosen_preprocess):
+    if data_name is None or not chosen_cols or not plot_dim_reduction_options:
+        return go.Figure(layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor="#f2f2f2")), None
 
-    df, data_df, coords, clusters = get_clusters(
+    # Cluster
+    _, data_df, _, clusters = get_clusters(
         data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options,
         dim_reduction, dim_reduction_options,
-        clustering, clustering_options, cluster_on_dim_reduction
+        clustering, clustering_options
     )
-    titles = get_data_source(data_name).org_title
+    # Get original dataframe to make sure titles are included
+    df = get_data_source(data_name)
 
     # Plots
-    scatter_plots = misc.get_scatter_plots(coords, clusters, titles)
+    _, _, coords_df = get_dim_reduction(data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options,
+                                        plot_dim_reduction, plot_dim_reduction_options)
+    scatter_plots = misc.get_scatter_plots(coords_df.values, clusters, df.org_title)
     figure = go.Figure(data=scatter_plots, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor="#f2f2f2",
                                                             legend={"bgcolor": "#f2f2f2"}, hovermode="closest"))
-
     # Cluster information
     bow_data_df = text_processing.TFIDF(ngram_range=(1, 1)).apply(
         get_preprocessed(data_name, chosen_cols, chosen_preprocess)
     )
-    cluster_info_df = misc.get_cluster_info_df(10, clusters, titles, bow_data_df)
+    cluster_info_df = misc.get_cluster_info_df(10, clusters, df.org_title, bow_data_df)
 
-    recommendation_options = [{"label": org_title, "value": org_title} for org_title in sorted(titles.values)]
-
-    return figure, misc.generate_datatable(cluster_info_df, "cluster_info", 1000, "600px"), recommendation_options
+    return figure, misc.generate_datatable(cluster_info_df, "cluster_info", 1000, "600px")
 
 
 @app.callback(
     Output("recommendations", "children"),
-    [Input("recommendation_picker", "value"), Input("recommendation_metric", "value")],
-    [dim_reductions.get_state("dropdown"),
-     dim_reductions.get_state("options"),
-     clusterings.get_state("dropdown"),
-     clusterings.get_state("options"),
-     State("cluster_on_dim_reduction", "value"),
-     State("data", "value"),
-     State("col_picker", "value"),
-     State("preprocess_picker", "children"),
+    [Input("recommendation_picker", "value"),
+     Input("recommendation_metric", "value"),
+     clusterings.get_input("dropdown"),
+     clusterings.get_input("options"),
+     # Additional triggers, but don't need input
+     clusterings.get_input("refresh"),
+     Input("cluster_info_table", "children")],
+    [State("data", "value"),
+     State("data_col_picker", "value"),
+     State("text_preprocess_picker", "children"),
      to_array.get_state("dropdown"),
-     to_array.get_state("options")]
+     to_array.get_state("options"),
+     dim_reductions.get_state("dropdown"),
+     dim_reductions.get_state("options")]
 )
-def recommend(recommend_for, recommendation_metric, dim_reduction, dim_reduction_options,
-              clustering, clustering_options, cluster_on_dim_reduction,
-              data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options):
-    if not recommend_for or data_name is None or not chosen_cols or not dim_reduction_options or not clustering_options:
+def recommend(recommend_for, recommendation_metric, clustering, clustering_options, *args):
+    data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options, \
+    dim_reduction, dim_reduction_options = args[-7:]
+
+    if not recommend_for or data_name is None or not chosen_cols \
+            or not clustering_options:
         return
 
-    df, data_df, coords, clusters = get_clusters(
+    df, data_df, dim_red_df, clusters = get_clusters(
         data_name, chosen_cols, chosen_preprocess, chosen_to_array, to_array_options,
         dim_reduction, dim_reduction_options,
-        clustering, clustering_options, cluster_on_dim_reduction
+        clustering, clustering_options
     )
+    data_df = dim_red_df if dim_red_df is not None else data_df
     titles = get_data_source(data_name).org_title
 
     recommendation_df = misc.get_recommendations(20, recommend_for, recommendation_metric, data_df, clusters, titles)
-    return misc.generate_datatable(recommendation_df, "recommendations_table")
+    return misc.generate_datatable(recommendation_df.round(2), "recommendations_table")
 
 
 if __name__ == "__main__":

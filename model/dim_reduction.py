@@ -1,6 +1,6 @@
 import sklearn.decomposition as decomposition
 import sklearn.manifold as manifold
-from sklearn.preprocessing import Normalizer
+from sklearn.preprocessing import Normalizer, StandardScaler
 
 
 class DimReduction:
@@ -21,8 +21,8 @@ class PCA(DimReduction):
         self.options = {"n_components": int(n_components)}
 
     def apply(self, df):
-        arr = Normalizer().fit_transform(df.values)
-        return decomposition.PCA(**self.options).fit_transform(arr)
+        # arr = StandardScaler().fit_transform()
+        return decomposition.PCA(**self.options).fit_transform(df.values)
 
 
 class NMF(DimReduction):
@@ -42,8 +42,17 @@ class SVD(DimReduction):
         self.options = {'n_components': int(n_components), 'n_iter': int(n_iter)}
 
     def apply(self, df):
-        arr = Normalizer().fit_transform(df.values)
-        return decomposition.TruncatedSVD(**self.options).fit_transform(arr)
+        return decomposition.TruncatedSVD(**self.options).fit_transform(df.values)
+
+
+class FactorAnalysis(DimReduction):
+    _default_options = {'n_components': 3, 'max_iter': 1000}
+
+    def __init__(self, n_components=3, max_iter=5):
+        self.options = {'n_components': int(n_components), 'max_iter': int(max_iter)}
+
+    def apply(self, df):
+        return decomposition.FactorAnalysis(**self.options).fit_transform(df.values)
 
 
 class TSNE(DimReduction):
@@ -54,5 +63,6 @@ class TSNE(DimReduction):
                         'learning_rate': float(learning_rate), 'n_iter': int(n_iter)}
 
     def apply(self, df):
-        arr = Normalizer().fit_transform(df.values)
-        return manifold.TSNE(**self.options).fit_transform(arr)
+        # arr = StandardScaler().fit_transform(df.values)
+        return manifold.TSNE(**self.options).fit_transform(df.values)
+

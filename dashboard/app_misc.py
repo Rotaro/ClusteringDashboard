@@ -70,6 +70,9 @@ class DropdownWithOptions:
             return self.generate_options_element(dropdown_choice)
 
     def generate_options_element(self, dropdown_choice):
+        if dropdown_choice is None or dropdown_choice == "None":
+            return
+
         return [
             e
             for option_name, default_value in self.dropdown_objects[dropdown_choice].get_options().items()
@@ -95,13 +98,14 @@ class DropdownWithOptions:
         return self.dropdown_objects[dropdown_choice](**options).apply(df)
 
 
-def generate_datatable(df, table_id, max_rows=10, max_cell_width="600px"):
+def generate_datatable(df, table_id, max_rows=10, max_cell_width="600px",
+                       text_overflow="ellipsis"):
     if df is None:
         return dash_table.DataTable(id=table_id)
 
     return dash_table.DataTable(
         id=table_id,
-        columns=[{"name": i, "id": i} for i in df.columns],
+        columns=[{"name": str(i), "id": str(i)} for i in df.columns],
         data=df[:max_rows].to_dict("rows"),
         css=[{
             'selector': '.dash-cell div.dash-cell-value',
@@ -115,7 +119,7 @@ def generate_datatable(df, table_id, max_rows=10, max_cell_width="600px"):
         style_cell={
             'whiteSpace': 'no-wrap',
             'overflow': 'hidden',
-            'textOverflow': 'ellipsis',
+            'textOverflow': text_overflow,
             'minWidth': '0px', 'maxWidth': max_cell_width,
         }
     )
@@ -129,16 +133,6 @@ def generate_column_picker(df, element_id):
         id=element_id, value=[], multi=True,
         options=[{'label': col, 'value': col} for col in df.columns]
     )
-
-
-def generate_text_processing_inputs(text_processing_dicts):
-    L = [
-        Input(name, 'value')
-        for d in text_processing_dicts
-        for cls_name, cls in d.items()
-        for name in cls().get_dash_element_ids()
-    ]
-    return L
 
 
 def get_scatter_plots(coords, clusters, titles):
@@ -204,8 +198,11 @@ def get_recommendations(n, recommend_for, recommendation_metric, data_df, cluste
 
     return pd.DataFrame(
         {"Top Recommendations": titles.values[top],
+         "Top Recommendations Score": dists.ravel()[top],
          "Top Recommendations in Cluster":
              np.pad(titles.values[clusters == recommend_for_cluster][top_cluster],
-                    (0, max(n - len(top_cluster), 0)), 'constant')
+                    (0, max(n - len(top_cluster), 0)), 'constant'),
+         "Top Recommendations in Cluster Score":
+             np.pad(dists_in_cluster.ravel()[top_cluster], (0, max(n - len(top_cluster), 0)), 'constant')
          }
     )
