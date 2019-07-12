@@ -13,27 +13,6 @@ _local_cache = {}
 _columns = ["id", "title", "org_title", "year", "imdb_tags", "summary", "wikipedia_summary"]
 
 
-def _get_set_local_cache(key, value_func, set_value=True, pickle_value=True):
-    pickle_key = key.replace("\\", ".").replace("/", ".") + ".pickle"
-
-    if pickle_value and pickle_key in os.listdir():
-        with open(_path + "\\" + pickle_key, "rb") as f:
-            value = pickle.load(f)
-
-        if set_value and key not in _local_cache:
-            _local_cache[key] = value
-
-    if key not in _local_cache:
-        value = value_func()
-        if set_value:
-            _local_cache[key] = value
-        if pickle_value:
-            with open(_path + "\\" + pickle_key, "wb") as f:
-                pickle.dump(value, f)
-
-    return _local_cache[key]
-
-
 def _get_tv_series_data(tv_series):
     logging.info("Starting retrieval of %d tv series.", len(tv_series))
     t_start = time.time()
@@ -71,14 +50,14 @@ def _save_tv_series_csv(df, filename):
     df.to_csv(_path + "\\" + filename, sep="\t", encoding="utf-8", index=False)
 
 
-def get(filename=None):
+def get(filename="tv_series_data.csv"):
     """Gets data for top 250 tv series on imdb.
 
     :param filename: str, optional filename for saving results.
     """
-    tv_series_data = _get_set_local_cache("tv_series_data_%s" % filename, lambda: _load_tv_series_csv(filename))
+    tv_series_data = _load_tv_series_csv(filename)
 
-    top_tv_series = _get_set_local_cache("top_tv_series", imdb.get_top_tv_series)
+    top_tv_series = imdb.get_top_tv_series()
     top_tv_series_list = [(url, v) for url, v in top_tv_series.items() if tv_series_data.id.isin([url]).sum() == 0]
 
     if len(top_tv_series_list) == 0:
@@ -89,9 +68,7 @@ def get(filename=None):
         data = _get_tv_series_data(dict(top_tv_series_list[i: i + chunk_size]))
         tv_series_data = tv_series_data.append(pd.DataFrame(data, columns=_columns))
 
-    if filename is not None:
-        _save_tv_series_csv(tv_series_data, filename)
-    tv_series_data = _get_set_local_cache("tv_series_data_%s" % filename, lambda: _load_tv_series_csv(filename))
+    _save_tv_series_csv(tv_series_data, filename)
 
     return tv_series_data
 

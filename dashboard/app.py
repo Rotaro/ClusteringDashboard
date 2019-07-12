@@ -33,7 +33,7 @@ cache = Cache()
 cache.init_app(app.server, config=CACHE_CONFIG)
 
 data_sources = {
-    "TV Series Data": lambda: get_tv_series_data("tv_series_data.csv")
+    "TV Series Data": lambda: get_tv_series_data()
 }
 
 avail_preprocess = {

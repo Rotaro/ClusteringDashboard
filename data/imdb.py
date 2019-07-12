@@ -1,14 +1,22 @@
 import re
 import logging
 import time
+import os
+
+import json
 
 from bs4 import BeautifulSoup
 import requests
 
 logging.getLogger().setLevel(logging.INFO)
+_path = os.path.dirname(__file__)
 
 
-def get_top_tv_series():
+def get_top_tv_series(filename="top_tv_series.json"):
+    if filename in os.listdir(_path):
+        with open(_path + "\\" + filename, "r") as f:
+            return json.load(f)
+
     t_start = time.time()
     start_url = "http://www.imdb.com/chart/toptv/"
     logging.info("%s - Retrieving top 250 tv series.", start_url)
@@ -29,6 +37,9 @@ def get_top_tv_series():
 
     logging.info("%s - Tv series retrieved - %d entries - %.2f sec duration.", start_url, len(tv_series),
                  time.time() - t_start)
+
+    with open(_path + "\\" + filename, "w") as f:
+        json.dump(tv_series, f)
 
     return tv_series
 
