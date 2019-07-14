@@ -2,6 +2,7 @@ import re
 import logging
 import time
 import os
+from collections.abc import Iterable
 
 import json
 
