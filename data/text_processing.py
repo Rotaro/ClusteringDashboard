@@ -22,6 +22,7 @@ nltk.download('wordnet')
 
 class TextAction:
     _default_options = {}
+    info_link = None
 
     def apply(self, df):
         raise NotImplemented
@@ -45,12 +46,16 @@ class WikipediaTextCleanup(TextAction):
 
 
 class Stem(TextAction):
+    info_link = "https://www.nltk.org/_modules/nltk/stem/snowball.html"
+
     def apply(self, df):
         stemmer = EnglishStemmer()
         return pd.DataFrame([stemmer.stem(text) for text in df.values.ravel()], columns=df.columns)
 
 
 class Lemmatize(TextAction):
+    info_link = "https://www.nltk.org/_modules/nltk/stem/wordnet.html"
+
     def apply(self, df):
         lemm = WordNetLemmatizer()
 
@@ -62,16 +67,17 @@ class Lemmatize(TextAction):
 
 class TFIDF(TextAction):
     _default_options = {
-        "max_df": 0.8, "min_df": 100, "ngram_range": (1, 2)
+        "max_df": 0.8, "min_df": 50, "ngram_range": (1, 2)
     }
+    info_link = "https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html"
 
-    def __init__(self, max_df=0.5, min_df=10, ngram_range=(1, 3)):
+    def __init__(self, max_df=0.8, min_df=50, ngram_range=(1, 2)):
         self.options = {"max_df": float(max_df), "min_df": int(min_df),
                         "ngram_range": tuple(int(x) for x in ngram_range)}
 
     def get_vec_arr(self, df):
-        # Tokenize with inverse term frequency
-        countvec = TfidfVectorizer(stop_words="english", **self.options)
+        min_df = min(self.options["min_df"], int(self.options["max_df"] * len(df)) - 1)
+        countvec = TfidfVectorizer(stop_words="english",  **{**self.options, "min_df": min_df})
         countarr = countvec.fit_transform(df.values.ravel())
 
         return countvec, countarr
@@ -83,16 +89,18 @@ class TFIDF(TextAction):
 
 class BOW(TextAction):
     _default_options = {
-        "max_df": 0.8, "min_df": 100, "ngram_range": (1, 2)
+        "max_df": 0.8, "min_df": 50, "ngram_range": (1, 2)
     }
+    info_link = "https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.CountVectorizer.html"
 
-    def __init__(self, max_df=0.5, min_df=10, ngram_range=(1, 3)):
+    def __init__(self, max_df=0.8, min_df=50, ngram_range=(1, 2)):
         self.options = {"max_df": float(max_df), "min_df": int(min_df),
                         "ngram_range": tuple(int(x) for x in ngram_range)}
 
     def get_vec_arr(self, df):
         # Tokenize with inverse term frequency
-        countvec = CountVectorizer(stop_words="english", **self.options)
+        min_df = min(self.options["min_df"], int(self.options["max_df"] * len(df)) -1)
+        countvec = CountVectorizer(stop_words="english", **{**self.options, "min_df": min_df})
         countarr = countvec.fit_transform(df.values.ravel())
 
         return countvec, countarr
@@ -106,6 +114,7 @@ class FastText(TextAction):
     _default_options = {
         "model": "skipgram", "dim": 25, "epoch": 5
     }
+    info_link = "https://fasttext.cc/docs/en/python-module.html#api"
 
     def __init__(self, model, dim, epoch):
         self.options = {"model": model, "dim": int(dim), "epoch": int(epoch)}
@@ -136,6 +145,7 @@ class FastTextPretrained(TextAction):
     _default_options = {
         "max_df": 0.5, "min_df": 4, "ngram_range": (1, 1)
     }
+    info_link = "https://fasttext.cc/docs/en/python-module.html#api"
 
     def __init__(self, max_df=0.5, min_df=4, ngram_range=(1, 3)):
         self.options = {"max_df": float(max_df), "min_df": int(min_df),

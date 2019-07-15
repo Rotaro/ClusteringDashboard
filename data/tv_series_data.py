@@ -23,6 +23,8 @@ def get_all_wikipedia_summaries(filename="wikipedia_tv_series_summary.csv"):
 
     title_url = wikipedia.get_wikipedia_tv_series_urls("wikipedia_tv_series_urls.json")
     title_url = [(title, url) for title, url in title_url if title not in set(df.title.values)]
+    if len(title_url) == 0:
+        return df
 
     t_start = time.time()
     chunk_size = 250

@@ -74,16 +74,18 @@ class DropdownWithOptions:
             return
 
         return [
-            e
-            for option_name, default_value in self.dropdown_objects[dropdown_choice].get_options().items()
-            for e in ("%s: " % option_name,
-                      dcc.Input(id="%s|%s" % (dropdown_choice, option_name), type="text", value=str(default_value)))
+            html.A("Info", href=self.dropdown_objects[dropdown_choice].info_link,
+                   style={"padding": "5px", "margin": "5px"}),
+            *[e
+              for option_name, default_value in self.dropdown_objects[dropdown_choice].get_options().items()
+              for e in ("%s: " % option_name,
+                        dcc.Input(id="%s|%s" % (dropdown_choice, option_name), type="text", value=str(default_value)))],
         ]
 
     def _parse_options_element(self, options_element):
         options = {}
         for e in options_element:
-            if not isinstance(e, dict):
+            if not isinstance(e, dict) or "href" in e["props"]:
                 continue
 
             id, value = e["props"]["id"], tuple(e["props"]["value"].strip("()").split(","))
@@ -174,6 +176,8 @@ def get_cluster_info_df(n_cluster_info, clusters, titles, bow_data_df):
                     (0, max(0, n_cluster_info - idx.sum())), 'constant'),
             *bow_data_df.columns[bow_data_df.loc[idx].sum(0).argsort()[::-1][:n_cluster_info]]
         ])
+
+    n_cluster_info = int(max([len(row) for row in cluster_info]) - 2) // 2
 
     cluster_info_df = pd.DataFrame(cluster_info, columns=[
         "Cluster", "Size",
