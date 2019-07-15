@@ -62,7 +62,7 @@ class Lemmatize(TextAction):
 
 class TFIDF(TextAction):
     _default_options = {
-        "max_df": 0.5, "min_df": 10, "ngram_range": (1, 3)
+        "max_df": 0.8, "min_df": 100, "ngram_range": (1, 2)
     }
 
     def __init__(self, max_df=0.5, min_df=10, ngram_range=(1, 3)):
@@ -83,7 +83,7 @@ class TFIDF(TextAction):
 
 class BOW(TextAction):
     _default_options = {
-        "max_df": 0.5, "min_df": 10, "ngram_range": (1, 3)
+        "max_df": 0.8, "min_df": 100, "ngram_range": (1, 2)
     }
 
     def __init__(self, max_df=0.5, min_df=10, ngram_range=(1, 3)):
@@ -104,7 +104,7 @@ class BOW(TextAction):
 
 class FastText(TextAction):
     _default_options = {
-        "model": "skipgram", "dim": 15, "epoch": 100
+        "model": "skipgram", "dim": 25, "epoch": 5
     }
 
     def __init__(self, model, dim, epoch):

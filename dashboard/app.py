@@ -14,7 +14,8 @@ import numpy as np
 import ClusteringDashboard.data.text_processing as text_processing
 import ClusteringDashboard.model as model
 import ClusteringDashboard.dashboard.app_misc as misc
-from ClusteringDashboard.data.tv_series_data import get as get_tv_series_data
+from ClusteringDashboard.data.tv_series_data import get_imdb_top_250_wikipedia_summaries
+from ClusteringDashboard.data.tv_series_data import get_all_wikipedia_summaries
 from flask_caching import Cache
 
 
@@ -33,7 +34,8 @@ cache = Cache()
 cache.init_app(app.server, config=CACHE_CONFIG)
 
 data_sources = {
-    "TOP 250 IMDB TV Series": lambda: get_tv_series_data()
+    "Top 250 IMDB TV Series": get_imdb_top_250_wikipedia_summaries,
+    "Wikipedia TV Series Summaries": get_all_wikipedia_summaries
 }
 
 avail_preprocess = {
@@ -88,7 +90,12 @@ clusterings = misc.DropdownWithOptions(
 
 @cache.memoize()
 def get_data_source(data_name):
-    return data_sources[data_name]() if data_name is not None else None
+    df = data_sources[data_name]() if data_name is not None else None
+
+    if df is not None and "org_title" not in df.columns:
+        df["org_title"] = df["title"]
+
+    return df
 
 
 @cache.memoize()
@@ -259,7 +266,8 @@ def update_chosen_data(input_value):
     df = get_data_source(input_value)
 
     if df is not None:
-        recommendation_options = [{"label": org_title, "value": org_title} for org_title in sorted(df.org_title.values)]
+        recommendation_options = [{"label": org_title, "value": org_title}
+                                  for org_title in sorted(df.org_title.values)]
     else:
         recommendation_options = None
 
