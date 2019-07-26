@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+import sys
+import os
+sys.path.append(os.getcwd())
+
 import logging
 
 import dash
@@ -57,7 +61,7 @@ if text_processing.fasttext is not None and text_processing.FastTextPretrained.h
     to_array.dropdown_objects["FastTextPretrained"] = text_processing.FastTextPretrained
 
 dim_reductions = misc.DropdownWithOptions(
-    header="Choose dimensionality reduction method for plotting:", dropdown_id="dim_reduction", dropdown_objects={
+    header="Choose dimensionality reduction before clustering:", dropdown_id="dim_reduction", dropdown_objects={
         "None": None,
         "NMF": model.dim_reduction.NMF,
         "PCA": model.dim_reduction.PCA,

@@ -1,6 +1,6 @@
 beautifulsoup4>=4.6.3
 dash>=1.0.0
-fasttext>=0.9.1
+dash_daq>=0.1.0
 Flask-Caching>=1.7.2
 matplotlib>=3.0.2
 nltk>=3.4
