@@ -14,8 +14,9 @@ _path = os.path.dirname(__file__)
 
 
 def get_top_tv_series(filename="top_tv_series.json"):
-    if filename in os.listdir(_path):
-        with open(_path + "\\" + filename, "r") as f:
+    full_path = os.path.join(_path, filename)
+    if os.path.exists(full_path):
+        with open(full_path, "r") as f:
             return json.load(f)
 
     t_start = time.time()
@@ -39,7 +40,7 @@ def get_top_tv_series(filename="top_tv_series.json"):
     logging.info("%s - Tv series retrieved - %d entries - %.2f sec duration.", start_url, len(tv_series),
                  time.time() - t_start)
 
-    with open(_path + "\\" + filename, "w") as f:
+    with open(full_path, "w") as f:
         json.dump(tv_series, f)
 
     return tv_series

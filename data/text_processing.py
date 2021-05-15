@@ -158,8 +158,8 @@ class FastTextPretrained(TextAction):
     @classmethod
     def _get_pretrained(cls):
         import pickle
-
-        with open(_path + "\\" + "fasttext_pretrained.pickle", "rb") as f:
+        full_path = os.path.join(_path, "fasttext_pretrained.pickle")
+        with open(full_path, "rb") as f:
             return pickle.loads(f.read())
 
     def apply(self, df):

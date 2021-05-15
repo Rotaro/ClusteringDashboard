@@ -16,8 +16,9 @@ _path = os.path.dirname(__file__)
 
 
 def get_all_wikipedia_summaries(filename="wikipedia_tv_series_summary.csv"):
-    if filename in os.listdir(_path):
-        df = pd.read_csv(_path + "/" + filename)
+    full_path = os.path.join(_path, filename)
+    if os.path.exists(full_path):
+        df = pd.read_csv(full_path)
     else:
         df = pd.DataFrame([], columns=_columns)
 
@@ -37,7 +38,7 @@ def get_all_wikipedia_summaries(filename="wikipedia_tv_series_summary.csv"):
                 name, url, wikipedia.get_wikipedia_summary(url)
             ])
         df = pd.concat([df, pd.DataFrame(name_url_summary, columns=_columns)], axis=0)
-        df.to_csv(_path + "/" + filename, index=False)
+        df.to_csv(full_path, index=False)
 
         logging.info("Retrieved %d summaries in %.1f sec.", chunk_size, time.time() - t_start_chunk)
 
