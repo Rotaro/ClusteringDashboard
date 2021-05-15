@@ -24,20 +24,23 @@ The dashboard consists of three parts:
 
 ## Installation
 ### Clone repository
- 
 `git clone https://github.com/Rotaro/ClusteringDashboard`
 
 ### Install necessary packages
- 
-#### Using pip:
-
 `pip install -r requirements.txt`
 
-## Starting dashboard
+## Alternative installation using docker
+`docker build -t dashboard .`
 
-Using the flask server packaged with Dash:
+## Running the application
+
+
 `python dashboard/app.py`
 
-The dashboard is then running locally on port 8050 by default, i.e. navigate to:
+With docker:
+
+`docker run -p 8050:8050 dashboard`
+
+The dashboard is then running locally on port 8050:
 
 `https://localhost:8050`
