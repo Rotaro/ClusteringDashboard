@@ -108,7 +108,7 @@ def generate_datatable(df, table_id, max_rows=10, max_cell_width="600px",
     return dash_table.DataTable(
         id=table_id,
         columns=[{"name": str(i), "id": str(i)} for i in df.columns],
-        data=df[:max_rows].to_dict("rows"),
+        data=df[:max_rows].to_dict("records"),
         css=[{
             'selector': '.dash-cell div.dash-cell-value',
             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;'
