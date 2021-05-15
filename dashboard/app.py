@@ -18,30 +18,27 @@ import numpy as np
 
 import data.text_processing as text_processing
 import model as model
-import dashboard.app_misc as misc
-from data.tv_series_data import get_imdb_top_250_wikipedia_summaries
-from data.tv_series_data import get_all_wikipedia_summaries
-from flask_caching import Cache
 
+import dashboard.app_misc as misc
+from dashboard.data_sources import data_sources, get_data_source
+
+from dashboard.cache import cache
+
+
+CACHE_CONFIG = {
+    "CACHE_TYPE": "simple"
+}
 
 external_stylesheets = [
     # Dash CSS
     "https://codepen.io/chriddyp/pen/bWLwgP.css",
     # Loading screen CSS
-    "https://codepen.io/chriddyp/pen/brPBPO.css"]
+    "https://codepen.io/chriddyp/pen/brPBPO.css"
+]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
-CACHE_CONFIG = {
-    "CACHE_TYPE": "simple"
-}
-cache = Cache()
 cache.init_app(app.server, config=CACHE_CONFIG)
-
-data_sources = {
-    "Top 250 IMDB TV Series": get_imdb_top_250_wikipedia_summaries,
-    "Wikipedia TV Series Summaries": get_all_wikipedia_summaries
-}
 
 avail_preprocess = {
     "WikipediaTextCleanup": text_processing.WikipediaTextCleanup,
@@ -91,19 +88,6 @@ clusterings = misc.DropdownWithOptions(
         "LDA": model.clustering.LDA,
     }, include_refresh_button=True
 )
-
-
-@cache.memoize()
-def get_data_source(data_name, sample_percent=100):
-    df = data_sources[data_name]() if data_name is not None else None
-
-    if df is not None and "org_title" not in df.columns:
-        df["org_title"] = df["title"]
-
-    if df is not None and sample_percent < 100:
-        df = df.sample(frac=sample_percent / 100)
-
-    return df
 
 
 @cache.memoize()
