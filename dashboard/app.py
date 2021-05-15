@@ -25,9 +25,11 @@ from dashboard.cache import cache
 
 from dashboard.data_selection import get_data_source, data_selection_tab
 from dashboard.data_preprocessing import get_preprocessed_data, preprocessing, data_preprocessing_tab
-from dashboard.data_to_array import processing as data_to_array_processing, get_cluster_data, text_to_array_tab
+from dashboard.data_to_array import get_cluster_data, processing as data_to_array_processing, text_to_array_tab
 from dashboard.data_dim_reduction import get_dim_reduction, dim_reductions, dim_reduction_tab
-from dashboard.plotting import get_scatter_plots, plot_dim_reductions, plotting_tab
+from dashboard.plotting import get_scatter_plots, plot_dim_reductions, plotting_options_tab, plotting_tab
+from dashboard.clustering import get_clusters, get_cluster_info_df, clusterings, clustering_tab, clusters_tab
+
 
 CACHE_CONFIG = {
     "CACHE_TYPE": "simple"
@@ -45,36 +47,6 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 cache.init_app(app.server, config=CACHE_CONFIG)
 
 
-clusterings = misc.DropdownWithOptions(
-    header="Choose clustering algorithm:", dropdown_id="clustering", dropdown_objects={
-        "KMeans": model.clustering.KMeans,
-        "DBSCAN": model.clustering.DBSCAN,
-        "AgglomerativeClustering": model.clustering.AgglomerativeClustering,
-        "SpectralClustering": model.clustering.SpectralClustering,
-        "GaussianMixture": model.clustering.GaussianMixture,
-        "LDA": model.clustering.LDA,
-    }, include_refresh_button=True
-)
-
-
-@cache.memoize()
-def get_clusters(data_name, use_sample_perc, selected_columns, selected_preprocessing, chosen_to_array, to_array_options,
-                 dim_reduction, dim_reduction_options,
-                 clustering, clustering_options):
-    df, data_df, dim_red_df = get_dim_reduction(
-        data_name, use_sample_perc, selected_columns, selected_preprocessing, chosen_to_array, to_array_options,
-        dim_reduction, dim_reduction_options
-    )
-    to_cluster = dim_red_df if dim_red_df is not None else data_df
-
-    if clustering_options:
-        clusters = clusterings.apply(clustering, clustering_options, to_cluster)
-    else:
-        clusters = np.zeros(to_cluster.shape[0])
-
-    return df, data_df, dim_red_df, clusters
-
-
 app.layout = html.Div([
     html.Div([
         dcc.Tabs(id="tabs_1", children=[
@@ -88,23 +60,16 @@ app.layout = html.Div([
 
     html.Div([
         dcc.Tabs(id="tabs_2", children=[
-            plotting_tab,
-            dcc.Tab(label="Clustering", children=[
-                html.Div(id="clustering_area", children=[
-                    clusterings.generate_dash_element(),
-                ]),
-                html.P(children=None, id="cluster_info_text", style={"padding": "5px", "margin": "5px"})
-            ], className="custom-tab", selected_className="custom-tab--selected"),
+            plotting_options_tab,
+            clustering_tab,
             dcc.Tab(label="Hide", children=[], className="custom-tab", selected_className="custom-tab--selected"),
         ]),
     ], style={"marginTop": "10px", "padding": "5px", "border": "grey solid"}),
 
     html.Div(id="plot_area", children=[
         dcc.Tabs(id="tabs_3", children=[
-            dcc.Tab(label="Plot", children=[dcc.Graph(id="scatter-plot")],
-                    className="custom-tab", selected_className="custom-tab--selected"),
-            dcc.Tab(label="Clusters", children=[html.Div(id="cluster_info_table")],
-                    className="custom-tab", selected_className="custom-tab--selected"),
+            plotting_tab,
+            clusters_tab,
             dcc.Tab(label="Recommendation", children=[
                 html.Div(id="recommendation_area", children=[
                     html.P("Pairwise Distance:", style={"padding": "5px"}),
@@ -254,7 +219,7 @@ def plot(chosen_to_array, to_array_options,
     bow_data_df = text_processing.TFIDF(ngram_range=(1, 1)).apply(
         get_preprocessed_data(data_name, use_sample_perc, selected_columns, selected_preprocessing)
     )
-    cluster_info_df = misc.get_cluster_info_df(10, clusters, df.org_title, bow_data_df)
+    cluster_info_df = get_cluster_info_df(10, clusters, df.org_title, bow_data_df)
 
     from sklearn.metrics.cluster import silhouette_score
     if np.unique(clusters).size > 1:

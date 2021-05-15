@@ -46,10 +46,15 @@ def get_scatter_plots(coords, clusters, titles):
     return scatter_plots
 
 
-plotting_tab = dcc.Tab(
+plotting_options_tab = dcc.Tab(
     label="Plotting Options", children=[
         html.Div(id="plotting_dim_red_area", children=[
             plot_dim_reductions.generate_dash_element(),
         ]),
     ], className="custom-tab", selected_className="custom-tab--selected"
+)
+
+plotting_tab = dcc.Tab(
+    label="Plot", children=[dcc.Graph(id="scatter-plot")],
+    className="custom-tab", selected_className="custom-tab--selected"
 )

@@ -135,32 +135,6 @@ def generate_column_picker(df, element_id):
     )
 
 
-def get_cluster_info_df(n_cluster_info, clusters, titles, bow_data_df):
-    cluster_info = []
-
-    for i, cluster in enumerate(np.unique(clusters)):
-        idx = clusters == cluster
-        if idx.sum() == 0:
-            continue
-        # Collect cluster information
-        cluster_info.append([
-            int(cluster), idx.sum(),
-            *np.pad(titles.loc[idx].sample(min(n_cluster_info, idx.sum()), replace=False).values,
-                    (0, max(0, n_cluster_info - idx.sum())), 'constant'),
-            *bow_data_df.columns[bow_data_df.loc[idx].sum(0).argsort()[::-1][:n_cluster_info]]
-        ])
-
-    n_cluster_info = int(max([len(row) for row in cluster_info]) - 2) // 2
-
-    cluster_info_df = pd.DataFrame(cluster_info, columns=[
-        "Cluster", "Size",
-        *["Sample%d" % i for i in range(1, n_cluster_info + 1)],
-        *["Top Word %d" % i for i in range(1, n_cluster_info + 1)],
-    ])
-
-    return cluster_info_df
-
-
 def get_recommendations(n, recommend_for, recommendation_metric, data_df, clusters, titles):
     recommend_for_idx = np.argwhere(titles.values == recommend_for).ravel()[0]
     recommend_for_cluster = clusters[recommend_for_idx]
