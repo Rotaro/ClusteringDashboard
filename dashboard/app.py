@@ -29,7 +29,7 @@ from dashboard.data_to_array import get_cluster_data, processing as data_to_arra
 from dashboard.data_dim_reduction import get_dim_reduction, dim_reductions, dim_reduction_tab
 from dashboard.plotting import get_scatter_plots, plot_dim_reductions, plotting_options_tab, plotting_tab
 from dashboard.clustering import get_clusters, get_cluster_info_df, clusterings, clustering_tab, clusters_tab
-
+from dashboard.recommendation import get_recommendations, recommendation_tab
 
 CACHE_CONFIG = {
     "CACHE_TYPE": "simple"
@@ -70,18 +70,7 @@ app.layout = html.Div([
         dcc.Tabs(id="tabs_3", children=[
             plotting_tab,
             clusters_tab,
-            dcc.Tab(label="Recommendation", children=[
-                html.Div(id="recommendation_area", children=[
-                    html.P("Pairwise Distance:", style={"padding": "5px"}),
-                    dcc.Dropdown(id="recommendation_metric", options=[
-                        {"label": name, "value": name} for name in ("cosine", "euclidean", "manhattan")
-                    ], value="cosine"),
-                    html.P("Recommend for:", style={"padding": "5px"}),
-                    dcc.Dropdown(id="recommendation_picker"),
-                    html.P("Recommendations:", style={"padding": "5px"}),
-                    html.Div(id="recommendations")
-                ]),
-            ], className="custom-tab", selected_className="custom-tab--selected"),
+            recommendation_tab,
         ], style={"border": "grey solid", "padding": "5px", "marginTop": "10px"})
     ], style={"marginTop": "10px", "padding": "5px", "border": "grey solid"})
 ], style={"background-color": "#f2f2f2", "margin": "20px"})
@@ -263,7 +252,7 @@ def recommend(recommend_for, recommendation_metric, clustering, clustering_optio
     data_df = dim_red_df if dim_red_df is not None else data_df
     titles = get_data_source(data_name, use_sample_perc).org_title
 
-    recommendation_df = misc.get_recommendations(20, recommend_for, recommendation_metric, data_df, clusters, titles)
+    recommendation_df = get_recommendations(20, recommend_for, recommendation_metric, data_df, clusters, titles)
     return misc.generate_datatable(recommendation_df.round(2), "recommendations_table")
 
 
