@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import requests
 from urllib.parse import unquote
 
-from ClusteringDashboard.data.misc import save_load_results_to_json
+from data.misc import save_load_results_to_json
 
 
 def _get_google_wikipedia_link(name):

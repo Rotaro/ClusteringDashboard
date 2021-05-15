@@ -3,8 +3,8 @@ import time
 import os
 from collections import namedtuple
 
-import ClusteringDashboard.data.wikipedia as wikipedia
-import ClusteringDashboard.data.imdb as imdb
+import data.wikipedia as wikipedia
+import data.imdb as imdb
 
 import pandas as pd
 

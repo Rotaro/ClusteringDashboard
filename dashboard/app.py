@@ -16,11 +16,11 @@ import plotly.graph_objs as go
 import pandas as pd
 import numpy as np
 
-import ClusteringDashboard.data.text_processing as text_processing
-import ClusteringDashboard.model as model
-import ClusteringDashboard.dashboard.app_misc as misc
-from ClusteringDashboard.data.tv_series_data import get_imdb_top_250_wikipedia_summaries
-from ClusteringDashboard.data.tv_series_data import get_all_wikipedia_summaries
+import data.text_processing as text_processing
+import model as model
+import dashboard.app_misc as misc
+from data.tv_series_data import get_imdb_top_250_wikipedia_summaries
+from data.tv_series_data import get_all_wikipedia_summaries
 from flask_caching import Cache
 
 

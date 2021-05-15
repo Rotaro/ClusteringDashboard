@@ -33,25 +33,10 @@ The dashboard consists of three parts:
 
 `pip install -r requirements.txt`
 
-#### Using conda:
-
-Install packages found in conda (Flask-Caching and dash_daq not available at the moment):
-
-`cat requirements.txt | grep -v Flask-Caching | grep -v dash_daq | xargs conda install`
-
-Alternatively, one can temporarily remove Flask-Caching and dash_daq from requirements.txt and run:
-
-`conda install --file requirements.txt`
-
-Finally install Flask-Caching and dash_daq:
-
-`pip install "Flask-Caching>=1.7.2" "dash_daq>=0.1.0"` 
-
-
 ## Starting dashboard
 
-Using the flask server from Dash (note you need to start from outside project directory for imports to work..):
-`python ClusteringDashboard/dashboard/app.py`
+Using the flask server packaged with Dash:
+`python dashboard/app.py`
 
 The dashboard is then running locally on port 8050 by default, i.e. navigate to:
 
