@@ -4,7 +4,7 @@ import dash_table
 
 import pandas as pd
 
-import model as model
+import model
 
 import dashboard.app_misc as misc
 from dashboard.cache import cache

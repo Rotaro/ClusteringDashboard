@@ -27,6 +27,7 @@ from dashboard.data_selection import get_data_source, data_selection_tab
 from dashboard.data_preprocessing import get_preprocessed_data, preprocessing, data_preprocessing_tab
 from dashboard.data_to_array import processing as data_to_array_processing, get_cluster_data, text_to_array_tab
 from dashboard.data_dim_reduction import get_dim_reduction, dim_reductions, dim_reduction_tab
+from dashboard.plotting import get_scatter_plots, plot_dim_reductions, plotting_tab
 
 CACHE_CONFIG = {
     "CACHE_TYPE": "simple"
@@ -43,16 +44,6 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 cache.init_app(app.server, config=CACHE_CONFIG)
 
-
-plot_dim_reductions = misc.DropdownWithOptions(
-    header="Choose dimensionality reduction method for plotting:", dropdown_id="plot_dim_reduction", dropdown_objects={
-        "NMF": model.dim_reduction.NMF,
-        "PCA": model.dim_reduction.PCA,
-        "SVD": model.dim_reduction.SVD,
-        "FactorAnalysis": model.dim_reduction.FactorAnalysis,
-        "TSNE": model.dim_reduction.TSNE,
-    }, include_refresh_button=True
-)
 
 clusterings = misc.DropdownWithOptions(
     header="Choose clustering algorithm:", dropdown_id="clustering", dropdown_objects={
@@ -97,11 +88,7 @@ app.layout = html.Div([
 
     html.Div([
         dcc.Tabs(id="tabs_2", children=[
-            dcc.Tab(label="Plotting Options", children=[
-                html.Div(id="plotting_dim_red_area", children=[
-                    plot_dim_reductions.generate_dash_element(),
-                ]),
-            ], className="custom-tab", selected_className="custom-tab--selected"),
+            plotting_tab,
             dcc.Tab(label="Clustering", children=[
                 html.Div(id="clustering_area", children=[
                     clusterings.generate_dash_element(),
@@ -260,7 +247,7 @@ def plot(chosen_to_array, to_array_options,
     _, _, coords_df = get_dim_reduction(data_name, use_sample_perc, selected_columns, selected_preprocessing,
                                         chosen_to_array, to_array_options,
                                         plot_dim_reduction, plot_dim_reduction_options)
-    scatter_plots = misc.get_scatter_plots(coords_df.values, clusters, df.org_title)
+    scatter_plots = get_scatter_plots(coords_df.values, clusters, df.org_title)
     figure = go.Figure(data=scatter_plots, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor="#f2f2f2",
                                                             legend={"bgcolor": "#f2f2f2"}, hovermode="closest"))
     # Cluster information

@@ -2,7 +2,6 @@
 import logging
 
 import numpy as np
-import matplotlib
 import pandas as pd
 from sklearn.metrics.pairwise import pairwise_distances
 
@@ -10,7 +9,6 @@ import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-import plotly.graph_objs as go
 
 
 def flatten(obj):
@@ -135,31 +133,6 @@ def generate_column_picker(df, element_id):
         id=element_id, value=[], multi=True,
         options=[{'label': col, 'value': col} for col in df.columns]
     )
-
-
-def get_scatter_plots(coords, clusters, titles):
-    # Generate unique colors (https://stackoverflow.com/a/55828367)
-    np.random.seed(42)
-    colors = np.random.choice(list(matplotlib.colors.cnames.values()), size=np.unique(clusters).size, replace=False)
-
-    dims = list(zip(("x", "y", "z"), range(coords.shape[1])))
-    scatter_class = go.Scatter3d if len(dims) == 3 else go.Scatter
-    scatter_plots = []
-    for i, cluster in enumerate(np.unique(clusters)):
-        idx = clusters == cluster
-        if idx.sum() == 0:
-            continue
-
-        scatter_plots.append(scatter_class(
-            name="Cluster %d" % cluster,
-            **{label: coords[idx, i] for label, i in dims},
-            text=titles.values[idx],
-            textposition="top center",
-            mode="markers",
-            marker=dict(size=5 if len(dims) == 3 else 12, symbol="circle", color=colors[i]),
-        ))
-
-    return scatter_plots
 
 
 def get_cluster_info_df(n_cluster_info, clusters, titles, bow_data_df):
