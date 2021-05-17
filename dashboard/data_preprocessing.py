@@ -17,16 +17,14 @@ preprocessing = {
 
 
 @cache.memoize()
-def get_preprocessed_data(data_name, use_sample_perc, selected_columns, selected_preprocessing):
+def get_preprocessed_data(data_name, use_sample_perc, selected_columns, preprocessing_method):
     df = get_selected_columns(data_name, use_sample_perc, selected_columns)
-    if df is not None and selected_preprocessing:
-        for preprocess_div in selected_preprocessing:
-            name, active = preprocess_div["props"]["id"], preprocess_div["props"]["value"]
-            if not active:
-                continue
-            df = preprocessing[name]().apply(df)
 
-        return df
+    if preprocessing_method:
+        for method in preprocessing_method:
+            df = preprocessing[method]().apply(df)
+
+    return df
 
 
 data_preprocessing_tab = dcc.Tab(
@@ -35,10 +33,9 @@ data_preprocessing_tab = dcc.Tab(
             # Choose preprocessing
             html.Div([
                 html.H5("Text preprocessing:"),
-                html.Div([dcc.Checklist(id=name, options=[{"label": name, "value": name}], value=[],
-                                        style={"padding": "5px", "margin": "5px"})
-                          for name, cls in preprocessing.items()],
-                         id="text_preprocess_picker")
+                dcc.Checklist(id="text_preprocess_picker",
+                              options=[{"label": name, "value": name} for name, cls in preprocessing.items()], value=[],
+                              style={"padding": "5px", "margin": "5px"})
             ], id="text_preprocess_picker_div"),
             # Display preprocessed text
             html.H5("Text used for clustering:"),
