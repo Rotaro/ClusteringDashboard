@@ -22,23 +22,25 @@ if text_processing.fasttext is not None and text_processing.FastTextPretrained.h
 
 
 @cache.memoize()
-def get_cluster_data(data_name, use_sample_perc, selected_columns, selected_preprocessing, chosen_to_array, to_array_options):
-    df = get_preprocessed_data(data_name, use_sample_perc, selected_columns, selected_preprocessing)
+def get_data_as_array(data_source, data_sample_percent, selected_columns,
+                      selected_preprocessing,
+                      data_to_array_method, data_to_array_options):
+    df = get_preprocessed_data(data_source, data_sample_percent, selected_columns, selected_preprocessing)
     data_df = None
-    if df is not None and to_array_options:
-        data_df = processing.apply(chosen_to_array, to_array_options, df)
+    if df is not None and data_to_array_options:
+        data_df = processing.apply(data_to_array_method, data_to_array_options, df)
 
     return df, data_df
 
 
 text_to_array_tab = dcc.Tab(
     label="Text to Array", children=[
-        html.Div(id="text_to_array_area", children=[
-            # Choose text_to_array method
+        html.Div(id="data_to_array_area", children=[
+            # Choose data_to_array_method
             processing.generate_dash_element(),
             # Display array
-            html.H5("Cluster array:", id="text_to_array_header"),
-            html.Div(dash_table.DataTable(id="text_to_array"), id="text_to_array_div"),
+            html.H5("Data array:", id="data_to_array_header"),
+            html.Div(dash_table.DataTable(id="data_to_array_table"), id="data_to_array_div"),
         ]),
     ], className="custom-tab", selected_className="custom-tab--selected"
 )

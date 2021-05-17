@@ -9,7 +9,7 @@ import model
 import dashboard.app_misc as misc
 from dashboard.cache import cache
 
-from dashboard.data_to_array import get_cluster_data
+from dashboard.data_to_array import get_data_as_array
 
 
 dim_reductions = misc.DropdownWithOptions(
@@ -25,24 +25,18 @@ dim_reductions = misc.DropdownWithOptions(
 
 
 @cache.memoize()
-def get_dim_reduction(data_name, use_sample_perc, selected_columns, selected_preprocessing, chosen_to_array,
-                      to_array_options, dim_reduction, dim_reduction_options):
-    df, data_df = get_cluster_data(data_name, use_sample_perc, selected_columns, selected_preprocessing,
-                                   chosen_to_array, to_array_options)
-    if df is None or data_df is None or not dim_reduction_options:
-        return df, data_df, None
-
-    return df, data_df, pd.DataFrame(dim_reductions.apply(dim_reduction, dim_reduction_options, data_df))
+def get_dim_reduction(dim_reduction_method, dim_reduction_options, data_df):
+    return pd.DataFrame(dim_reductions.apply(dim_reduction_method, dim_reduction_options, data_df))
 
 
 dim_reduction_tab = dcc.Tab(
     label="Dimensionality Reduction", children=[
         html.Div(id="dim_red_area", children=[
-            # Choose text_to_array method
+            # Choose data_to_array method
             dim_reductions.generate_dash_element(),
             # Display array
-            html.H5("Dimensionality Reduced Array:", id="dim_red_array_header"),
-            html.Div(dash_table.DataTable(id="dim_red_array"), id="dim_red_array_div"),
+            html.H5("Dimensionality Reduced Array:", id="dim_red_table_header"),
+            html.Div(dash_table.DataTable(id="dim_red_table"), id="dim_red_table_div"),
         ]),
     ], className="custom-tab", selected_className="custom-tab--selected"
 )

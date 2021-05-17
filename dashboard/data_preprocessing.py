@@ -17,8 +17,8 @@ preprocessing = {
 
 
 @cache.memoize()
-def get_preprocessed_data(data_name, use_sample_perc, selected_columns, preprocessing_method):
-    df = get_selected_columns(data_name, use_sample_perc, selected_columns)
+def get_preprocessed_data(data_source, data_sample_percent, selected_columns, preprocessing_method):
+    df = get_selected_columns(data_source, data_sample_percent, selected_columns)
 
     if preprocessing_method:
         for method in preprocessing_method:
@@ -33,10 +33,10 @@ data_preprocessing_tab = dcc.Tab(
             # Choose preprocessing
             html.Div([
                 html.H5("Text preprocessing:"),
-                dcc.Checklist(id="text_preprocess_picker",
+                dcc.Checklist(id="text_preprocess_checklist",
                               options=[{"label": name, "value": name} for name, cls in preprocessing.items()], value=[],
                               style={"padding": "5px", "margin": "5px"})
-            ], id="text_preprocess_picker_div"),
+            ], id="text_preprocess_checklist_div"),
             # Display preprocessed text
             html.H5("Text used for clustering:"),
             html.Div(dash_table.DataTable(id="text_preprocess"), id="text_preprocess_div"),

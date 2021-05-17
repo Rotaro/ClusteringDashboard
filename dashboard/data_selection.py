@@ -17,21 +17,21 @@ data_sources = {
 
 
 @cache.memoize()
-def get_data_source(data_name, sample_percent=100):
-    df = data_sources[data_name]() if data_name is not None else None
+def get_data(data_source, data_sample_percent=100):
+    df = data_sources[data_source]() if data_source is not None else None
 
     if df is not None and "org_title" not in df.columns:
         df["org_title"] = df["title"]
 
-    if df is not None and sample_percent < 100:
-        df = df.sample(frac=sample_percent / 100)
+    if df is not None and data_sample_percent < 100:
+        df = df.sample(frac=data_sample_percent / 100)
 
     return df
 
 
 @cache.memoize()
-def get_selected_columns(data_name, use_sample_perc, selected_columns):
-    df = get_data_source(data_name, use_sample_perc)
+def get_selected_columns(data_source, data_sample_percent, selected_columns):
+    df = get_data(data_source, data_sample_percent)
     if df is not None and selected_columns is not None and len(selected_columns) > 0:
         return text_processing.join_columns(df, selected_columns)
 
@@ -47,13 +47,13 @@ data_selection_tab = dcc.Tab(
             ),
             # Choose columns
             html.H5("Percentage of data to use:"),
-            html.Div(dash_daq.NumericInput("input_sample_perc", value=100, min=0, max=100)),
+            html.Div(dash_daq.NumericInput("data_sample_percent", value=100, min=0, max=100)),
             # Choose columns
             html.H5("Select columns to use:"),
             html.Div(dcc.Dropdown(id="data_column_selector"), id="data_column_selector_div"),
             # Display top rows
             html.H5("Top rows:", id="data_top_rows"),
-            html.Div(dash_table.DataTable(id="data_head_table"), id="data_head_div")
+            html.Div(dash_table.DataTable(id="data_top_rows_table"), id="data_top_rows_div")
         ]),
     ], className="custom-tab", selected_className="custom-tab--selected"
 )
