@@ -67,7 +67,7 @@ def get_recommendation_output(
 
 
 arguments = {
-    "recommendation_title": ("recommendation_picker", "value"),
-    "recommendation_metric": ("recommendation_metric", "value"),
+    "recommendation_title": misc.HtmlElement("recommendation_picker", "value"),
+    "recommendation_metric": misc.HtmlElement("recommendation_metric", "value"),
 }
 outputs = [Output("recommendations", "children"), Output("recommendation_picker", "options")]

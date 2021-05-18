@@ -70,9 +70,9 @@ def get_data_selection_output(selected_data, selected_data_percent):
 
 
 arguments = {
-    "selected_data": ("data", "value"),
-    "selected_data_percent": ("data_sample_percent", "value"),
-    "selected_columns": ("data_column_selector", "value"),
+    "selected_data": misc.HtmlElement("data", "value"),
+    "selected_data_percent": misc.HtmlElement("data_sample_percent", "value"),
+    "selected_columns": misc.HtmlElement("data_column_selector", "value"),
 }
 
 outputs = [Output("data_top_rows_div", "children"), Output("data_column_selector_div", "children"),

@@ -55,9 +55,9 @@ def get_data_to_array_output(df, data_to_array_method, data_to_array_options):
 
 
 arguments = {
-    "data_to_array_method": processing._dropdown_args,
-    "data_to_array_options": processing._options_args,
-    "data_to_array_refresh": processing._refresh_args,
-    "data_to_array_table": ("data_to_array_div", "children"),
+    "data_to_array_method": misc.HtmlElement(*processing._dropdown_args),
+    "data_to_array_options": misc.HtmlElement(*processing._options_args),
+    "data_to_array_refresh": misc.HtmlElement(*processing._refresh_args),
+    "data_to_array_table": misc.HtmlElement("data_to_array_div", "children"),
 }
 outputs = [Output("data_to_array_div", "children"), Output("data_to_array_header", "children")]

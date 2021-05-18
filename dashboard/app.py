@@ -32,8 +32,8 @@ app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 cache.init_app(app.server, config=CACHE_CONFIG)
 
-# This dictionary explicitly maps argument names to html elements
-argument_pool = {
+# This dictionary explicitly maps names to html elements defined in UI components
+name_to_html_element_pool = {
     **data_selection.arguments,
     **data_preprocessing.arguments,
     **data_to_array.arguments,
@@ -45,22 +45,23 @@ argument_pool = {
 
 
 def map_arguments(outputs):
-    """Maps function arguments to Input / State using argument_pool."""
+    """Creates dash callback for function by mapping arguments to Inputs / States using name_to_html_element_pool."""
     def _map_arguments(func):
         inputs = []
         states = []
         for argument in inspect.getfullargspec(func).args:
             if argument.startswith("s_"):
                 # s_ -> State
-                states.append(State(*argument_pool[argument.replace("s_", "")]))
+                states.append(State(*name_to_html_element_pool[argument.replace("s_", "")]))
             else:
-                inputs.append(Input(*argument_pool[argument]))
+                inputs.append(Input(*name_to_html_element_pool[argument]))
 
         return app.callback(outputs, inputs, states)(func)
 
     return _map_arguments
 
 
+################################################################################################
 # Layer / components of dashboard
 app.layout = html.Div([
     html.Div([
@@ -91,6 +92,7 @@ app.layout = html.Div([
 ], style={"background-color": "#f2f2f2", "margin": "20px"})
 
 
+################################################################################################
 # Generate callbacks for updating dropdowns (e.g. showing correct options when changing dimensionality reduction)
 data_to_array.processing.generate_update_options_callback(app)
 data_dim_reduction.dim_reductions.generate_update_options_callback(app)
@@ -98,8 +100,9 @@ plotting.plot_dim_reductions.generate_update_options_callback(app)
 clustering.clusterings.generate_update_options_callback(app)
 
 
+################################################################################################
 # Helper functions which tie the UI components together
-# Alternative would be to call different UI components in all update functions
+# Alternative would be to repeatedly call different UI components in update functions
 def get_data(selected_data, data_sample_percent):
     return data_selection.get_data(selected_data, data_sample_percent)
 
@@ -151,6 +154,8 @@ def get_data_clustered(selected_data, data_sample_percent, selected_columns,
     return df, df_arr, df_arr_dim_red, clusters
 
 
+################################################################################################
+# Functions which update UI elements
 @map_arguments(data_selection.outputs)
 def update_data_selection(
         # Inputs
@@ -236,9 +241,10 @@ def update_plotting(
         dim_reduction_method, dim_reduction_options,
         clustering_method, clustering_options
     )
-    # Get original dataframe to make sure titles are included
-    df = get_data(s_selected_data, s_selected_data_percent)
-    titles = df.org_title if df is not None else None
+
+    titles = None
+    if s_selected_data:
+        titles = get_data(s_selected_data, s_selected_data_percent).org_title
 
     return plotting.get_plotting_output(df_arr, plot_dim_reduction_method, plot_dim_reduction_options,
                                         clusters, titles)

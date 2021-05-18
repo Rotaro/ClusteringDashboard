@@ -50,7 +50,7 @@ def get_data_preprocessing_output(df, preprocessing_method):
 
 
 arguments = {
-    "preprocessing_method": ("text_preprocess_checklist", "value"),
-    "preprocessing_output": ("text_preprocess_div", "children"),
+    "preprocessing_method": misc.HtmlElement("text_preprocess_checklist", "value"),
+    "preprocessing_output": misc.HtmlElement("text_preprocess_div", "children"),
 }
 outputs = Output("text_preprocess_div", "children")

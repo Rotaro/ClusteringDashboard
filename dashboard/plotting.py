@@ -86,8 +86,8 @@ def get_plotting_output(df_arr,
 
 
 arguments = {
-    "plot_dim_reduction_method": plot_dim_reductions._dropdown_args,
-    "plot_dim_reduction_options": plot_dim_reductions._options_args,
-    "plot_dim_reduction_refresh": plot_dim_reductions._refresh_args,
+    "plot_dim_reduction_method": misc.HtmlElement(*plot_dim_reductions._dropdown_args),
+    "plot_dim_reduction_options": misc.HtmlElement(*plot_dim_reductions._options_args),
+    "plot_dim_reduction_refresh": misc.HtmlElement(*plot_dim_reductions._refresh_args),
 }
 outputs = Output("scatter-plot", "figure")

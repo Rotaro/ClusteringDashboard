@@ -97,9 +97,9 @@ def get_clustering_output(df_arr, clustering_method, clustering_options, titles,
 
 
 arguments = {
-    "clustering_method": clusterings._dropdown_args,
-    "clustering_options": clusterings._options_args,
-    "clustering_refresh": clusterings._refresh_args,
-    "cluster_info_table": ("cluster_info_table", "children"),
+    "clustering_method": misc.HtmlElement(*clusterings._dropdown_args),
+    "clustering_options": misc.HtmlElement(*clusterings._options_args),
+    "clustering_refresh": misc.HtmlElement(*clusterings._refresh_args),
+    "cluster_info_table": misc.HtmlElement("cluster_info_table", "children"),
 }
 outputs = [Output("cluster_info_table", "children"), Output("cluster_info_text", "children")]

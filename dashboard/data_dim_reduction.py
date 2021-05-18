@@ -25,7 +25,7 @@ dim_reductions = misc.DropdownWithOptions(
 
 @cache.memoize()
 def get_dim_reduction(df_arr, dim_reduction_method, dim_reduction_options):
-    if dim_reduction_method and dim_reduction_options:
+    if df_arr is not None and dim_reduction_method and dim_reduction_options:
         return pd.DataFrame(dim_reductions.apply(dim_reduction_method, dim_reduction_options, df_arr))
 
     return None
@@ -55,8 +55,8 @@ def get_dim_reduction_output(df_arr, dim_reduction_method, dim_reduction_options
 
 
 arguments = {
-    "dim_reduction_method": dim_reductions._dropdown_args,
-    "dim_reduction_options": dim_reductions._options_args,
-    "dim_reduction_refresh": dim_reductions._refresh_args,
+    "dim_reduction_method": misc.HtmlElement(*dim_reductions._dropdown_args),
+    "dim_reduction_options": misc.HtmlElement(*dim_reductions._options_args),
+    "dim_reduction_refresh": misc.HtmlElement(*dim_reductions._refresh_args),
 }
 outputs = Output("dim_red_table_div", "children")
