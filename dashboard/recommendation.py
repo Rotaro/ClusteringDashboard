@@ -1,9 +1,12 @@
 import dash_core_components as dcc
 import dash_html_components as html
+from dash.dependencies import Output
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics.pairwise import pairwise_distances
+
+import dashboard.app_misc as misc
 
 
 def get_recommendations(n, title, metric, data_df, clusters, titles):
@@ -43,3 +46,24 @@ recommendation_tab = dcc.Tab(
         ]),
     ], className="custom-tab", selected_className="custom-tab--selected"
 )
+
+
+def get_recommendation_output(
+        recommendation_title, recommendation_metric, n_recommendations,
+        df_arr, clusters, titles
+):
+    recommendations = None
+    titles_for_recommendation = []
+
+    if titles is not None:
+        titles_for_recommendation = [{"label": title, "value": title} for title in sorted(titles)]
+
+    if recommendation_title and df_arr is not None:
+        recommendation_df = get_recommendations(n_recommendations, recommendation_title, recommendation_metric,
+                                                df_arr, clusters, titles)
+        recommendations = misc.generate_datatable(recommendation_df.round(2), "recommendations_table")
+
+    return recommendations, titles_for_recommendation
+
+
+outputs = [Output("recommendations", "children"), Output("recommendation_picker", "options")]

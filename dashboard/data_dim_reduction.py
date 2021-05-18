@@ -25,7 +25,7 @@ dim_reductions = misc.DropdownWithOptions(
 
 
 @cache.memoize()
-def get_dim_reduction(dim_reduction_method, dim_reduction_options, data_df):
+def get_dim_reduction(data_df, dim_reduction_method, dim_reduction_options):
     return pd.DataFrame(dim_reductions.apply(dim_reduction_method, dim_reduction_options, data_df))
 
 

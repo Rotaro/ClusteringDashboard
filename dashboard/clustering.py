@@ -9,9 +9,6 @@ import model
 import dashboard.app_misc as misc
 from dashboard.cache import cache
 
-from dashboard.data_to_array import get_data_as_array
-from dashboard.data_dim_reduction import get_dim_reduction
-
 
 clusterings = misc.DropdownWithOptions(
     header="Choose clustering algorithm:", dropdown_id="clustering", dropdown_objects={
@@ -26,24 +23,13 @@ clusterings = misc.DropdownWithOptions(
 
 
 @cache.memoize()
-def get_clusters(data_source, data_sample_percent, selected_columns,
-                 selected_preprocessing,
-                 data_to_array_method, data_to_array_options,
-                 dim_reduction, dim_reduction_options,
-                 clustering, clustering_options):
-    df, data_df = get_data_as_array(data_source, data_sample_percent, selected_columns,
-                                    selected_preprocessing,
-                                    data_to_array_method, data_to_array_options)
-
-    dim_red_df = get_dim_reduction(dim_reduction, dim_reduction_options, data_df)
-    to_cluster = dim_red_df if dim_red_df is not None else data_df
-
+def get_clusters(to_cluster, clustering, clustering_options):
     if clustering_options:
         clusters = clusterings.apply(clustering, clustering_options, to_cluster)
     else:
         clusters = np.zeros(to_cluster.shape[0])
 
-    return df, data_df, dim_red_df, clusters
+    return clusters
 
 
 def get_cluster_info_df(n_cluster_info, clusters, titles, bow_data_df):

@@ -22,18 +22,15 @@ if text_processing.fasttext is not None and text_processing.FastTextPretrained.h
 
 
 @cache.memoize()
-def get_data_as_array(data_source, data_sample_percent, selected_columns,
-                      selected_preprocessing,
-                      data_to_array_method, data_to_array_options):
-    df = get_preprocessed_data(data_source, data_sample_percent, selected_columns, selected_preprocessing)
-    data_df = None
+def get_data_as_array(df, data_to_array_method, data_to_array_options):
+    df_arr = None
     if df is not None and data_to_array_options:
-        data_df = processing.apply(data_to_array_method, data_to_array_options, df)
+        df_arr = processing.apply(data_to_array_method, data_to_array_options, df)
 
-    return df, data_df
+    return df_arr
 
 
-text_to_array_tab = dcc.Tab(
+data_to_array_tab = dcc.Tab(
     label="Text to Array", children=[
         html.Div(id="data_to_array_area", children=[
             # Choose data_to_array_method

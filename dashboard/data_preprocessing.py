@@ -6,8 +6,6 @@ import data.text_processing as text_processing
 
 from dashboard.cache import cache
 
-from dashboard.data_selection import get_selected_columns
-
 
 preprocessing = {
     "WikipediaTextCleanup": text_processing.WikipediaTextCleanup,
@@ -17,9 +15,7 @@ preprocessing = {
 
 
 @cache.memoize()
-def get_preprocessed_data(data_source, data_sample_percent, selected_columns, preprocessing_method):
-    df = get_selected_columns(data_source, data_sample_percent, selected_columns)
-
+def get_preprocessed_data(df, preprocessing_method):
     if preprocessing_method:
         for method in preprocessing_method:
             df = preprocessing[method]().apply(df)

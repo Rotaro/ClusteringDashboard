@@ -30,8 +30,7 @@ def get_data(data_source, data_sample_percent=100):
 
 
 @cache.memoize()
-def get_selected_columns(data_source, data_sample_percent, selected_columns):
-    df = get_data(data_source, data_sample_percent)
+def get_selected_columns(df, selected_columns):
     if df is not None and selected_columns is not None and len(selected_columns) > 0:
         return text_processing.join_columns(df, selected_columns)
 
