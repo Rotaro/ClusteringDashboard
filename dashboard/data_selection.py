@@ -2,12 +2,14 @@ import dash_core_components as dcc
 import dash_html_components as html
 import dash_daq
 import dash_table
+from dash.dependencies import Output
 
 import data.text_processing as text_processing
 
 from data.tv_series_data import get_imdb_top_250_wikipedia_summaries
 from data.tv_series_data import get_all_wikipedia_summaries
 
+import dashboard.app_misc as misc
 from dashboard.cache import cache
 
 data_sources = {
@@ -56,3 +58,22 @@ data_selection_tab = dcc.Tab(
         ]),
     ], className="custom-tab", selected_className="custom-tab--selected"
 )
+
+
+def get_data_selection_output(selected_data, selected_data_percent):
+    df = get_data(selected_data, selected_data_percent)
+    top_rows_text = "Top Rows (%d rows total)" % (0 if df is None else len(df))
+
+    return misc.generate_datatable(df, "data_top_rows_table", 5), \
+           misc.generate_column_picker(df, "data_column_selector"), \
+           top_rows_text
+
+
+arguments = {
+    "selected_data": ("data", "value"),
+    "selected_data_percent": ("data_sample_percent", "value"),
+    "selected_columns": ("data_column_selector", "value"),
+}
+
+outputs = [Output("data_top_rows_div", "children"), Output("data_column_selector_div", "children"),
+           Output("data_top_rows", "children")]

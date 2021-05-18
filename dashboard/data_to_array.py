@@ -1,6 +1,7 @@
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
+from dash.dependencies import Output
 
 import data.text_processing as text_processing
 
@@ -41,3 +42,22 @@ data_to_array_tab = dcc.Tab(
         ]),
     ], className="custom-tab", selected_className="custom-tab--selected"
 )
+
+
+def get_data_to_array_output(df, data_to_array_method, data_to_array_options):
+    df_arr = get_data_as_array(df, data_to_array_method, data_to_array_options)
+
+    data_to_array_header = "Array to cluster (shape %dx%d):" % ((0, 0) if df_arr is None else df_arr.shape)
+    sample_df = df_arr.sample(min(df_arr.shape[1], 20), axis=1).round(2) if df_arr is not None else None
+
+    return misc.generate_datatable(sample_df, "data_to_array", 5, max_cell_width=None), \
+           data_to_array_header
+
+
+arguments = {
+    "data_to_array_method": processing._dropdown_args,
+    "data_to_array_options": processing._options_args,
+    "data_to_array_refresh": processing._refresh_args,
+    "data_to_array_table": ("data_to_array_div", "children"),
+}
+outputs = [Output("data_to_array_div", "children"), Output("data_to_array_header", "children")]

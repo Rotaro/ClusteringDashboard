@@ -66,4 +66,8 @@ def get_recommendation_output(
     return recommendations, titles_for_recommendation
 
 
+arguments = {
+    "recommendation_title": ("recommendation_picker", "value"),
+    "recommendation_metric": ("recommendation_metric", "value"),
+}
 outputs = [Output("recommendations", "children"), Output("recommendation_picker", "options")]

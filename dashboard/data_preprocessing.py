@@ -1,9 +1,11 @@
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
+from dash.dependencies import Output
 
 import data.text_processing as text_processing
 
+import dashboard.app_misc as misc
 from dashboard.cache import cache
 
 
@@ -16,7 +18,7 @@ preprocessing = {
 
 @cache.memoize()
 def get_preprocessed_data(df, preprocessing_method):
-    if preprocessing_method:
+    if df is not None and preprocessing_method:
         for method in preprocessing_method:
             df = preprocessing[method]().apply(df)
 
@@ -40,3 +42,15 @@ data_preprocessing_tab = dcc.Tab(
     ], className="custom-tab", selected_className="custom-tab--selected"
 )
 
+
+def get_data_preprocessing_output(df, preprocessing_method):
+    df = get_preprocessed_data(df, preprocessing_method)
+
+    return misc.generate_datatable(df, "text_preprocess", 5, max_cell_width=None)
+
+
+arguments = {
+    "preprocessing_method": ("text_preprocess_checklist", "value"),
+    "preprocessing_output": ("text_preprocess_div", "children"),
+}
+outputs = Output("text_preprocess_div", "children")
