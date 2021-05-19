@@ -38,26 +38,26 @@ class DropdownWithOptions:
         ], id='%s_div' % self.dropdown_id)
 
     @property
-    def _dropdown_args(self):
+    def dropdown_args(self):
         return '%s' % self.dropdown_id, 'value'
 
     @property
-    def _refresh_args(self):
+    def refresh_args(self):
         return '%s_refresh' % self.dropdown_id, 'n_clicks'
 
     @property
-    def _options_args(self):
+    def options_args(self):
         return '%s_options' % self.dropdown_id, 'children'
 
     def get_input(self, element='dropdown'):
-        return Input(*getattr(self, f"_{element}_args"))
+        return Input(*getattr(self, f"{element}_args"))
 
     def get_state(self, element='dropdown'):
-        return State(*getattr(self, f"_{element}_args"))
+        return State(*getattr(self, f"{element}_args"))
 
     def generate_update_options_callback(self, app):
         @app.callback(
-            Output(*self._options_args),
+            Output(*self.options_args),
             [self.get_input('dropdown')]
         )
         def update_options(dropdown_choice):

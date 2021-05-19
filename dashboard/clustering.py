@@ -12,7 +12,7 @@ import dashboard.app_misc as misc
 from dashboard.cache import cache
 
 
-clusterings = misc.DropdownWithOptions(
+clustering_dropdown = misc.DropdownWithOptions(
     header="Choose clustering algorithm:", dropdown_id="clustering", dropdown_objects={
         "KMeans": model.clustering.KMeans,
         "DBSCAN": model.clustering.DBSCAN,
@@ -23,11 +23,33 @@ clusterings = misc.DropdownWithOptions(
     }, include_refresh_button=True
 )
 
+clustering_tab = dcc.Tab(
+    label="Clustering", children=[
+        html.Div(id="clustering_area", children=[
+            clustering_dropdown.generate_dash_element(),
+        ]),
+        html.P(children=None, id="cluster_info_text", style={"padding": "5px", "margin": "5px"})
+    ], className="custom-tab", selected_className="custom-tab--selected"
+)
+
+clusters_tab = dcc.Tab(
+    label="Clusters", children=[html.Div(id="cluster_info_table")],
+    className="custom-tab", selected_className="custom-tab--selected"
+)
+
+arguments = {
+    "clustering_method": misc.HtmlElement(*clustering_dropdown.dropdown_args),
+    "clustering_options": misc.HtmlElement(*clustering_dropdown.options_args),
+    "clustering_refresh": misc.HtmlElement(*clustering_dropdown.refresh_args),
+    "cluster_info_table": misc.HtmlElement("cluster_info_table", "children"),
+}
+outputs = [Output("cluster_info_table", "children"), Output("cluster_info_text", "children")]
+
 
 @cache.memoize()
 def get_clusters(to_cluster, clustering, clustering_options):
     if clustering_options:
-        clusters = clusterings.apply(clustering, clustering_options, to_cluster)
+        clusters = clustering_dropdown.apply(clustering, clustering_options, to_cluster)
     elif to_cluster is not None:
         clusters = np.zeros(to_cluster.shape[0])
     else:
@@ -67,22 +89,7 @@ def get_cluster_info_df(n_cluster_info, clusters, titles, bow):
     return cluster_info_df
 
 
-clustering_tab = dcc.Tab(
-    label="Clustering", children=[
-        html.Div(id="clustering_area", children=[
-            clusterings.generate_dash_element(),
-        ]),
-        html.P(children=None, id="cluster_info_text", style={"padding": "5px", "margin": "5px"})
-    ], className="custom-tab", selected_className="custom-tab--selected"
-)
-
-clusters_tab = dcc.Tab(
-    label="Clusters", children=[html.Div(id="cluster_info_table")],
-    className="custom-tab", selected_className="custom-tab--selected"
-)
-
-
-def get_clustering_output(df_arr, clustering_method, clustering_options, titles, bow):
+def get_clustering_cluster_output(df_arr, clustering_method, clustering_options, titles, bow):
     clusters = get_clusters(df_arr, clustering_method, clustering_options)
 
     cluster_info_df = None
@@ -94,12 +101,3 @@ def get_clustering_output(df_arr, clustering_method, clustering_options, titles,
         cluster_info_score = "Silhouette Score: %.2f" % silhouette_score(df_arr.values, clusters)
 
     return misc.generate_datatable(cluster_info_df, "cluster_info", 1000, "600px"), cluster_info_score
-
-
-arguments = {
-    "clustering_method": misc.HtmlElement(*clusterings._dropdown_args),
-    "clustering_options": misc.HtmlElement(*clusterings._options_args),
-    "clustering_refresh": misc.HtmlElement(*clusterings._refresh_args),
-    "cluster_info_table": misc.HtmlElement("cluster_info_table", "children"),
-}
-outputs = [Output("cluster_info_table", "children"), Output("cluster_info_text", "children")]

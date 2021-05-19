@@ -9,21 +9,11 @@ import dashboard.app_misc as misc
 from dashboard.cache import cache
 
 
-preprocessing = {
+data_preprocessing_options = {
     "WikipediaTextCleanup": text_processing.WikipediaTextCleanup,
     "Stem": text_processing.Stem,
     "Lemmatize": text_processing.Lemmatize,
 }
-
-
-@cache.memoize()
-def get_preprocessed_data(df, preprocessing_method):
-    if df is not None and preprocessing_method:
-        for method in preprocessing_method:
-            df = preprocessing[method]().apply(df)
-
-    return df
-
 
 data_preprocessing_tab = dcc.Tab(
     label="Text Preprocessing", children=[
@@ -32,7 +22,7 @@ data_preprocessing_tab = dcc.Tab(
             html.Div([
                 html.H5("Text preprocessing:"),
                 dcc.Checklist(id="text_preprocess_checklist",
-                              options=[{"label": name, "value": name} for name, cls in preprocessing.items()], value=[],
+                              options=[{"label": name, "value": name} for name, cls in data_preprocessing_options.items()], value=[],
                               style={"padding": "5px", "margin": "5px"})
             ], id="text_preprocess_checklist_div"),
             # Display preprocessed text
@@ -42,15 +32,23 @@ data_preprocessing_tab = dcc.Tab(
     ], className="custom-tab", selected_className="custom-tab--selected"
 )
 
-
-def get_data_preprocessing_output(df, preprocessing_method):
-    df = get_preprocessed_data(df, preprocessing_method)
-
-    return misc.generate_datatable(df, "text_preprocess", 5, max_cell_width=None)
-
-
 arguments = {
     "preprocessing_method": misc.HtmlElement("text_preprocess_checklist", "value"),
     "preprocessing_output": misc.HtmlElement("text_preprocess_div", "children"),
 }
 outputs = Output("text_preprocess_div", "children")
+
+
+@cache.memoize()
+def get_preprocessed_data(df, preprocessing_method):
+    if df is not None and preprocessing_method:
+        for method in preprocessing_method:
+            df = data_preprocessing_options[method]().apply(df)
+
+    return df
+
+
+def get_data_preprocessing_output(df, preprocessing_method):
+    df = get_preprocessed_data(df, preprocessing_method)
+
+    return misc.generate_datatable(df, "text_preprocess", 5, max_cell_width=None)

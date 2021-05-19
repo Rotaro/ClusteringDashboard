@@ -1,4 +1,7 @@
 import inspect
+import sys
+import os
+sys.path.append(os.getcwd())  # This is here so that can start app from root of project..
 
 import dash
 import dash_core_components as dcc
@@ -84,20 +87,12 @@ app.layout = html.Div([
 
     html.Div(id="plot_area", children=[
         dcc.Tabs(id="tabs_3", children=[
-            plotting.plotting_tab,
+            plotting.plot_tab,
             clustering.clusters_tab,
             recommendation.recommendation_tab,
         ], style={"border": "grey solid", "padding": "5px", "marginTop": "10px"})
     ], style={"marginTop": "10px", "padding": "5px", "border": "grey solid"})
 ], style={"background-color": "#f2f2f2", "margin": "20px"})
-
-
-################################################################################################
-# Generate callbacks for updating dropdowns (e.g. showing correct options when changing dimensionality reduction)
-data_to_array.processing.generate_update_options_callback(app)
-data_dim_reduction.dim_reductions.generate_update_options_callback(app)
-plotting.plot_dim_reductions.generate_update_options_callback(app)
-clustering.clusterings.generate_update_options_callback(app)
 
 
 ################################################################################################
@@ -155,7 +150,15 @@ def get_data_clustered(selected_data, data_sample_percent, selected_columns,
 
 
 ################################################################################################
-# Functions which update UI elements
+# Generate callbacks for updating dropdowns (e.g. showing correct options when changing dimensionality reduction)
+data_to_array.data_to_array_dropdown.generate_update_options_callback(app)
+data_dim_reduction.dim_reduction_dropdown.generate_update_options_callback(app)
+plotting.plotting_options_dropdown.generate_update_options_callback(app)
+clustering.clustering_dropdown.generate_update_options_callback(app)
+
+
+################################################################################################
+# Functions with callbacks which update UI elements
 @map_arguments(data_selection.outputs)
 def update_data_selection(
         # Inputs
@@ -220,7 +223,7 @@ def update_dim_reduction(
 
 
 @map_arguments(plotting.outputs)
-def update_plotting(
+def update_plot(
         # Inputs
         data_to_array_method, data_to_array_options,
         dim_reduction_method, dim_reduction_options,
@@ -246,12 +249,12 @@ def update_plotting(
     if s_selected_data:
         titles = get_data(s_selected_data, s_selected_data_percent).org_title
 
-    return plotting.get_plotting_output(df_arr, plot_dim_reduction_method, plot_dim_reduction_options,
-                                        clusters, titles)
+    return plotting.get_plot_output(df_arr, plot_dim_reduction_method, plot_dim_reduction_options,
+                                    clusters, titles)
 
 
 @map_arguments(clustering.outputs)
-def update_clustering(
+def update_cluster_clustering(
         # Inputs
         data_to_array_method, data_to_array_options,
         dim_reduction_method, dim_reduction_options,
@@ -282,7 +285,7 @@ def update_clustering(
             get_data_preprocessed(s_selected_data, s_selected_data_percent, s_selected_columns, s_preprocessing_method)
         )
 
-    return clustering.get_clustering_output(df_arr_dim_red, clustering_method, clustering_options, titles, bow)
+    return clustering.get_clustering_cluster_output(df_arr_dim_red, clustering_method, clustering_options, titles, bow)
 
 
 @map_arguments(recommendation.outputs)

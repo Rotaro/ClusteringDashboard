@@ -9,6 +9,28 @@ from sklearn.metrics.pairwise import pairwise_distances
 import dashboard.app_misc as misc
 
 
+recommendation_tab = dcc.Tab(
+    label="Recommendation", children=[
+        html.Div(id="recommendation_area", children=[
+            html.P("Pairwise Distance:", style={"padding": "5px"}),
+            dcc.Dropdown(id="recommendation_metric", options=[
+                {"label": name, "value": name} for name in ("cosine", "euclidean", "manhattan")
+            ], value="cosine"),
+            html.P("Recommendations for:", style={"padding": "5px"}),
+            dcc.Dropdown(id="recommendation_picker"),
+            html.P("Recommendations:", style={"padding": "5px"}),
+            html.Div(id="recommendations")
+        ]),
+    ], className="custom-tab", selected_className="custom-tab--selected"
+)
+
+arguments = {
+    "recommendation_title": misc.HtmlElement("recommendation_picker", "value"),
+    "recommendation_metric": misc.HtmlElement("recommendation_metric", "value"),
+}
+outputs = [Output("recommendations", "children"), Output("recommendation_picker", "options")]
+
+
 def get_recommendations(n, title, metric, data_df, clusters, titles):
     title_idx = np.argwhere(titles.values == title).ravel()[0]
     title_cluster = clusters[title_idx]
@@ -32,22 +54,6 @@ def get_recommendations(n, title, metric, data_df, clusters, titles):
     )
 
 
-recommendation_tab = dcc.Tab(
-    label="Recommendation", children=[
-        html.Div(id="recommendation_area", children=[
-            html.P("Pairwise Distance:", style={"padding": "5px"}),
-            dcc.Dropdown(id="recommendation_metric", options=[
-                {"label": name, "value": name} for name in ("cosine", "euclidean", "manhattan")
-            ], value="cosine"),
-            html.P("Recommendations for:", style={"padding": "5px"}),
-            dcc.Dropdown(id="recommendation_picker"),
-            html.P("Recommendations:", style={"padding": "5px"}),
-            html.Div(id="recommendations")
-        ]),
-    ], className="custom-tab", selected_className="custom-tab--selected"
-)
-
-
 def get_recommendation_output(
         recommendation_title, recommendation_metric, n_recommendations,
         df_arr, clusters, titles
@@ -64,10 +70,3 @@ def get_recommendation_output(
         recommendations = misc.generate_datatable(recommendation_df.round(2), "recommendations_table")
 
     return recommendations, titles_for_recommendation
-
-
-arguments = {
-    "recommendation_title": misc.HtmlElement("recommendation_picker", "value"),
-    "recommendation_metric": misc.HtmlElement("recommendation_metric", "value"),
-}
-outputs = [Output("recommendations", "children"), Output("recommendation_picker", "options")]

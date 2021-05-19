@@ -15,7 +15,7 @@ def _get_google_wikipedia_link(name):
         return
     url = "https://www.google.com/search?q={search_term}+wikipedia".format(search_term=name.replace(" ", "+"))
     page_text = requests.get(url).text
-    links = [link for link in re.findall("a href=\"/url\?q=([^\"]*?)\&amp", page_text) if "en.wikipedia" in link]
+    links = [link for link in re.findall(r"a href=\"/url\?q=([^\"]*?)&amp", page_text) if "en.wikipedia" in link]
 
     return unquote(unquote(links[0])) if links else None
 

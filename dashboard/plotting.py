@@ -13,7 +13,7 @@ import dashboard.app_misc as misc
 from dashboard.cache import cache
 
 
-plot_dim_reductions = misc.DropdownWithOptions(
+plotting_options_dropdown = misc.DropdownWithOptions(
     header="Choose dimensionality reduction method for plotting:", dropdown_id="plot_dim_reduction", dropdown_objects={
         "NMF": model.dim_reduction.NMF,
         "PCA": model.dim_reduction.PCA,
@@ -23,11 +23,32 @@ plot_dim_reductions = misc.DropdownWithOptions(
     }, include_refresh_button=True
 )
 
+plotting_options_tab = dcc.Tab(
+    label="Plotting Options", children=[
+        html.Div(id="plotting_dim_red_area", children=[
+            plotting_options_dropdown.generate_dash_element(),
+        ]),
+    ], className="custom-tab", selected_className="custom-tab--selected"
+)
+
+plot_tab = dcc.Tab(
+    label="Plot", children=[dcc.Graph(id="scatter-plot")],
+    className="custom-tab", selected_className="custom-tab--selected"
+)
+
+arguments = {
+    "plot_dim_reduction_method": misc.HtmlElement(*plotting_options_dropdown.dropdown_args),
+    "plot_dim_reduction_options": misc.HtmlElement(*plotting_options_dropdown.options_args),
+    "plot_dim_reduction_refresh": misc.HtmlElement(*plotting_options_dropdown.refresh_args),
+}
+outputs = Output("scatter-plot", "figure")
+
 
 @cache.memoize()
 def get_dim_reduction(df_arr, plot_dim_reduction_method, plot_dim_reduction_options):
     if plot_dim_reduction_method and plot_dim_reduction_options:
-        return pd.DataFrame(plot_dim_reductions.apply(plot_dim_reduction_method, plot_dim_reduction_options, df_arr))
+        return pd.DataFrame(plotting_options_dropdown.apply(plot_dim_reduction_method, plot_dim_reduction_options,
+                                                            df_arr))
 
     return None
 
@@ -57,21 +78,7 @@ def get_scatter_plots(coords, clusters, titles):
     return scatter_plots
 
 
-plotting_options_tab = dcc.Tab(
-    label="Plotting Options", children=[
-        html.Div(id="plotting_dim_red_area", children=[
-            plot_dim_reductions.generate_dash_element(),
-        ]),
-    ], className="custom-tab", selected_className="custom-tab--selected"
-)
-
-plotting_tab = dcc.Tab(
-    label="Plot", children=[dcc.Graph(id="scatter-plot")],
-    className="custom-tab", selected_className="custom-tab--selected"
-)
-
-
-def get_plotting_output(df_arr,
+def get_plot_output(df_arr,
                         plot_dim_reduction_method, plot_dim_reduction_options,
                         clusters, titles):
     if df_arr is None or not plot_dim_reduction_method or not plot_dim_reduction_options:
@@ -83,11 +90,3 @@ def get_plotting_output(df_arr,
 
     return go.Figure(data=scatter_plots, layout=go.Layout(margin=dict(l=0, r=0, b=0, t=0), plot_bgcolor="#f2f2f2",
                                                           legend={"bgcolor": "#f2f2f2"}, hovermode="closest"))
-
-
-arguments = {
-    "plot_dim_reduction_method": misc.HtmlElement(*plot_dim_reductions._dropdown_args),
-    "plot_dim_reduction_options": misc.HtmlElement(*plot_dim_reductions._options_args),
-    "plot_dim_reduction_refresh": misc.HtmlElement(*plot_dim_reductions._refresh_args),
-}
-outputs = Output("scatter-plot", "figure")
